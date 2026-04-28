@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, NavLink } from 'react-router-dom'
-import { Menu, Search, ShoppingBag, X } from 'lucide-react'
+import { Menu, Minus, Plus, Search, ShoppingBag, Trash2, X } from 'lucide-react'
+import { formatINR } from '../lib/currency'
 
 const navLinks = [
   { label: 'Home', to: '/' },
@@ -10,7 +11,12 @@ const navLinks = [
   { label: 'Contact', to: '/contact' },
 ]
 
-export function Navbar({ onOpenCart, onOpenMobile }) {
+export function Navbar({
+  onOpenCart,
+  onOpenMobile,
+  onOpenSearch,
+  cartCount = 0,
+}) {
   const [scrolled, setScrolled] = useState(false)
   const [logoMissing, setLogoMissing] = useState(false)
 
@@ -54,15 +60,9 @@ export function Navbar({ onOpenCart, onOpenMobile }) {
                     className="h-11 w-auto object-contain"
                     onError={() => setLogoMissing(true)}
                   />
-                  <img
-                    src="/namelogo.png"
-                    alt="Moonberry"
-                    className="h-8 w-auto object-contain"
-                    onError={() => setLogoMissing(true)}
-                  />
                 </div>
               ) : (
-                <span className="font-serif text-3xl tracking-wide">Moonberry</span>
+                <span className="sr-only">Moonberry</span>
               )}
             </Link>
           </div>
@@ -79,15 +79,9 @@ export function Navbar({ onOpenCart, onOpenMobile }) {
                   className="h-9 w-auto object-contain"
                   onError={() => setLogoMissing(true)}
                 />
-                <img
-                  src="/namelogo.png"
-                  alt="Moonberry"
-                  className="h-4 w-auto object-contain"
-                  onError={() => setLogoMissing(true)}
-                />
               </div>
             ) : (
-              <span className="font-serif text-3xl tracking-wide">Moonberry</span>
+              <span className="sr-only">Moonberry</span>
             )}
           </Link>
 
@@ -111,23 +105,45 @@ export function Navbar({ onOpenCart, onOpenMobile }) {
           <div className="flex min-w-[50px] items-center justify-end gap-2 md:min-w-0 md:flex-1 md:gap-3">
             <button
               type="button"
-              className="hidden rounded-full border border-white/60 bg-white/65 p-2.5 text-moonberry-brown transition hover:bg-white md:inline-flex"
+              className="rounded-full border border-white/60 bg-white/65 p-2.5 text-moonberry-brown transition hover:bg-white"
+              onClick={onOpenSearch}
               aria-label="Search"
             >
               <Search size={18} />
             </button>
             <button
               type="button"
-              className="rounded-full border border-white/60 bg-white/65 p-2.5 text-moonberry-brown transition hover:bg-white"
+              className="relative rounded-full border border-white/60 bg-white/65 p-2.5 text-moonberry-brown transition hover:bg-white"
               onClick={onOpenCart}
               aria-label="Open cart"
             >
               <ShoppingBag size={18} />
+              {cartCount > 0 ? (
+                <span className="absolute -right-1 -top-1 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-moonberry-brown px-1 text-[10px] font-medium text-white">
+                  {cartCount}
+                </span>
+              ) : null}
             </button>
           </div>
         </div>
       </div>
     </header>
+  )
+}
+
+export function IndiaTrustBar() {
+  const trustItems = ['UPI & Cards', 'COD Available', 'Free Shipping above Rs. 999', 'Easy 7-day Returns']
+
+  return (
+    <div className="section-shell mt-3">
+      <div className="rounded-2xl border border-moonberry-rose/25 bg-white/70 px-4 py-2">
+        <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-1 text-[11px] uppercase tracking-[0.14em] text-moonberry-mauve">
+          {trustItems.map((item) => (
+            <span key={item}>{item}</span>
+          ))}
+        </div>
+      </div>
+    </div>
   )
 }
 
@@ -177,8 +193,98 @@ export function MobileMenu({ open, onClose }) {
   )
 }
 
-export function CartDrawer({ open, onClose, items = [] }) {
+export function SearchModal({
+  open,
+  onClose,
+  products = [],
+  onSelectProduct,
+}) {
+  const [query, setQuery] = useState('')
+  const handleClose = () => {
+    setQuery('')
+    onClose()
+  }
+
+  const visibleProducts = products
+    .filter((product) =>
+      `${product.name} ${product.category} ${product.collection}`
+        .toLowerCase()
+        .includes(query.toLowerCase().trim()),
+    )
+    .slice(0, 6)
+
+  return (
+    <div
+      className={`fixed inset-0 z-50 transition ${open ? 'pointer-events-auto' : 'pointer-events-none'}`}
+    >
+      <div
+        className={`absolute inset-0 bg-black/30 transition-opacity duration-300 ${open ? 'opacity-100' : 'opacity-0'}`}
+        onClick={handleClose}
+      />
+      <div
+        className={`section-shell absolute inset-x-0 top-24 transition duration-300 ${open ? 'translate-y-0 opacity-100' : '-translate-y-2 opacity-0'}`}
+      >
+        <div className="mx-auto w-full max-w-3xl rounded-3xl border border-moonberry-rose/30 bg-white p-5 shadow-xl">
+          <div className="flex items-center gap-3 rounded-2xl border border-moonberry-rose/30 px-4">
+            <Search size={18} className="text-moonberry-mauve" />
+            <input
+              autoFocus
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Search perfumes, skincare, makeup..."
+              className="h-12 w-full outline-none"
+            />
+            <button type="button" onClick={handleClose} aria-label="Close search">
+              <X size={18} />
+            </button>
+          </div>
+          <div className="mt-4 space-y-2">
+            {visibleProducts.length > 0 ? (
+              visibleProducts.map((product) => (
+                <button
+                  key={product.id}
+                  type="button"
+                  onClick={() => {
+                    setQuery('')
+                    onSelectProduct(product.slug)
+                  }}
+                  className="flex w-full items-center gap-3 rounded-xl border border-moonberry-rose/25 p-3 text-left transition hover:bg-moonberry-cream"
+                >
+                  <img src={product.images[0]} alt={product.name} className="h-14 w-12 rounded-md object-cover" />
+                  <div className="flex-1">
+                    <p className="font-medium text-moonberry-brown">{product.name}</p>
+                    <p className="text-xs uppercase tracking-wide text-moonberry-mauve">{product.category}</p>
+                  </div>
+                  <p className="text-sm text-moonberry-brown">{formatINR(product.price)}</p>
+                </button>
+              ))
+            ) : (
+              <p className="rounded-xl border border-dashed border-moonberry-rose/40 p-4 text-sm text-moonberry-mauve">
+                No matching products. Try a different keyword.
+              </p>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+export function CartDrawer({
+  open,
+  onClose,
+  items = [],
+  onQtyChange,
+  onRemove,
+  onClearCart,
+  onCheckout,
+}) {
   const subtotal = items.reduce((sum, item) => sum + item.price * item.qty, 0)
+  const freeShippingThreshold = 999
+  const remainingForFreeShipping = Math.max(freeShippingThreshold - subtotal, 0)
+  const shipping = subtotal === 0 || subtotal >= freeShippingThreshold ? 0 : 99
+  const gst = Math.round(subtotal * 0.18)
+  const total = subtotal + shipping
 
   return (
     <div
@@ -200,26 +306,88 @@ export function CartDrawer({ open, onClose, items = [] }) {
           </button>
         </div>
         <div className="space-y-5">
-          {items.length === 0 && <p className="text-moonberry-mauve">Your cart is currently empty.</p>}
+          {items.length === 0 && (
+            <div className="rounded-2xl border border-dashed border-moonberry-rose/40 bg-white/80 p-5 text-center">
+              <p className="text-moonberry-mauve">Your cart is currently empty.</p>
+              <p className="mt-1 text-sm text-moonberry-mauve">Add your beauty picks to continue checkout.</p>
+            </div>
+          )}
           {items.map((item) => (
             <div key={item.id} className="flex gap-4 rounded-2xl border border-moonberry-rose/30 p-3">
               <img src={item.image} alt={item.name} className="h-24 w-20 rounded-xl object-cover" />
               <div className="flex-1">
                 <h4 className="font-medium text-moonberry-brown">{item.name}</h4>
-                <p className="text-sm text-moonberry-mauve">Qty {item.qty}</p>
-                <p className="mt-2">${item.price.toFixed(2)}</p>
+                <div className="mt-2 flex items-center gap-2">
+                  <button
+                    type="button"
+                    className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-moonberry-rose/40"
+                    onClick={() => onQtyChange(item.id, item.qty - 1)}
+                    aria-label={`Decrease quantity of ${item.name}`}
+                  >
+                    <Minus size={14} />
+                  </button>
+                  <span className="text-sm text-moonberry-mauve">Qty {item.qty}</span>
+                  <button
+                    type="button"
+                    className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-moonberry-rose/40"
+                    onClick={() => onQtyChange(item.id, item.qty + 1)}
+                    aria-label={`Increase quantity of ${item.name}`}
+                  >
+                    <Plus size={14} />
+                  </button>
+                  <button
+                    type="button"
+                    className="ml-auto inline-flex h-7 w-7 items-center justify-center rounded-full border border-moonberry-rose/40 text-moonberry-mauve"
+                    onClick={() => onRemove(item.id)}
+                    aria-label={`Remove ${item.name} from cart`}
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+                <p className="mt-2">{formatINR(item.price)}</p>
               </div>
             </div>
           ))}
         </div>
         <div className="mt-8 border-t border-moonberry-rose/30 pt-5">
+          <div className="mb-4 rounded-xl bg-moonberry-cream px-3 py-2 text-sm text-moonberry-brown">
+            {remainingForFreeShipping > 0
+              ? `${formatINR(remainingForFreeShipping)} away from free shipping in India`
+              : 'You unlocked free shipping in India'}
+          </div>
           <div className="mb-4 flex items-center justify-between">
             <span>Subtotal</span>
-            <span className="font-medium">${subtotal.toFixed(2)}</span>
+            <span className="font-medium">{formatINR(subtotal)}</span>
           </div>
-          <button type="button" className="w-full rounded-full bg-moonberry-brown px-6 py-3 text-white transition hover:opacity-95">
-            Checkout
+          <div className="mb-2 flex items-center justify-between text-sm text-moonberry-mauve">
+            <span>Shipping</span>
+            <span>{shipping === 0 ? 'Free' : formatINR(shipping)}</span>
+          </div>
+          <div className="mb-4 flex items-center justify-between text-sm text-moonberry-mauve">
+            <span>Estimated GST (18%)</span>
+            <span>{formatINR(gst)}</span>
+          </div>
+          <div className="mb-5 flex items-center justify-between border-t border-moonberry-rose/30 pt-4">
+            <span className="font-medium">Total</span>
+            <span className="text-lg font-semibold">{formatINR(total)}</span>
+          </div>
+          <p className="mb-4 text-xs text-moonberry-mauve">Final GST and shipping are confirmed at checkout.</p>
+          <button
+            type="button"
+            disabled={items.length === 0}
+            onClick={onCheckout}
+            className="w-full rounded-full bg-moonberry-brown px-6 py-3 text-white transition hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            Proceed to Checkout
           </button>
+          <button
+            type="button"
+            onClick={onClearCart}
+            className="mt-2 w-full rounded-full border border-moonberry-rose/40 px-6 py-3 text-sm text-moonberry-brown transition hover:bg-moonberry-cream"
+          >
+            Clear Cart
+          </button>
+          <p className="mt-3 text-center text-xs text-moonberry-mauve">Pay securely via UPI, cards, net banking and wallets.</p>
         </div>
       </aside>
     </div>

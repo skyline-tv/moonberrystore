@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { formatINR } from '../lib/currency'
 
 function SwatchRow({ shades = [] }) {
   if (!shades.length) return null
@@ -18,9 +19,26 @@ function SwatchRow({ shades = [] }) {
 }
 
 export function ProductCard({ product, onQuickAdd }) {
+  const hasDiscount = product.compareAtPrice && product.compareAtPrice > product.price
+  const discountPercent = hasDiscount
+    ? Math.round(((product.compareAtPrice - product.price) / product.compareAtPrice) * 100)
+    : 0
+
   return (
     <article className="group rounded-3xl border border-white/60 bg-white/70 p-3 soft-shadow transition duration-500 hover:-translate-y-1 hover:shadow-[0_18px_50px_rgba(74,59,61,0.16)]">
-      <div className="overflow-hidden rounded-2xl">
+      <div className="relative overflow-hidden rounded-2xl">
+        <div className="absolute left-3 top-3 z-10 flex gap-2">
+          {product.bestSeller ? (
+            <span className="rounded-full bg-moonberry-brown px-3 py-1 text-[10px] uppercase tracking-[0.14em] text-white">
+              Bestseller
+            </span>
+          ) : null}
+          {hasDiscount ? (
+            <span className="rounded-full bg-white/90 px-3 py-1 text-[10px] uppercase tracking-[0.14em] text-moonberry-brown">
+              {discountPercent}% Off
+            </span>
+          ) : null}
+        </div>
         <img
           src={product.images[0]}
           alt={product.name}
@@ -41,7 +59,12 @@ export function ProductCard({ product, onQuickAdd }) {
               {product.category}
             </p>
           </div>
-          <span className="text-moonberry-brown">${product.price}</span>
+          <div className="text-right">
+            <span className="text-moonberry-brown">{formatINR(product.price)}</span>
+            {hasDiscount ? (
+              <p className="text-xs text-moonberry-mauve line-through">{formatINR(product.compareAtPrice)}</p>
+            ) : null}
+          </div>
         </div>
         <SwatchRow shades={product.shadeHex} />
         <button
@@ -49,7 +72,7 @@ export function ProductCard({ product, onQuickAdd }) {
           onClick={() => onQuickAdd(product)}
           className="mt-3 w-full rounded-full border border-moonberry-rose/40 px-4 py-2 text-sm tracking-[0.11em] uppercase transition hover:bg-moonberry-brown hover:text-white"
         >
-          Quick Add
+          Add to Bag
         </button>
       </div>
     </article>

@@ -44,6 +44,35 @@ a {
   text-decoration: none;
 }
 
+button {
+  transition:
+    transform 160ms ease,
+    box-shadow 200ms ease,
+    background-color 200ms ease,
+    color 200ms ease,
+    border-color 200ms ease,
+    opacity 200ms ease;
+}
+
+button:active {
+  transform: translateY(1px) scale(0.99);
+}
+
+input,
+textarea,
+select {
+  transition:
+    border-color 180ms ease,
+    box-shadow 180ms ease,
+    background-color 180ms ease;
+}
+
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  box-shadow: 0 0 0 3px rgba(176, 141, 146, 0.2);
+}
+
 ::selection {
   background: rgba(176, 141, 146, 0.35);
   color: #3f3032;

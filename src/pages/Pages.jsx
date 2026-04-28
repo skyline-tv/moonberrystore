@@ -2,9 +2,13 @@ import { useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { collections, products, testimonials } from '../data/mockData'
 import { ProductCard, SectionHeading } from '../components/ProductCard'
+import { formatINR } from '../lib/currency'
 
 export function HomePage({ onQuickAdd }) {
   const bestSellers = products.filter((item) => item.bestSeller)
+  const [email, setEmail] = useState('')
+  const [newsletterMessage, setNewsletterMessage] = useState('')
+  const [isSubscribing, setIsSubscribing] = useState(false)
 
   return (
     <div>
@@ -102,9 +106,48 @@ export function HomePage({ onQuickAdd }) {
           <h3 className="mt-3 font-serif text-4xl">Join the Moonberry Edit</h3>
           <p className="mx-auto mt-3 max-w-lg text-white/80">Receive early access to beauty launches, exclusive offers, and private editorials.</p>
           <div className="mx-auto mt-6 flex max-w-xl flex-col gap-3 sm:flex-row">
-            <input className="h-12 flex-1 rounded-full border border-white/30 bg-white/10 px-5 text-white placeholder:text-white/70 outline-none" placeholder="Enter your email" />
-            <button type="button" className="h-12 rounded-full bg-white px-6 text-sm tracking-[0.15em] uppercase text-moonberry-brown">Subscribe</button>
+            <input
+              value={email}
+              onChange={(event) => {
+                setEmail(event.target.value)
+                setNewsletterMessage('')
+              }}
+              className="h-12 flex-1 rounded-full border border-white/30 bg-white/10 px-5 text-white placeholder:text-white/70 outline-none"
+              placeholder="Enter your email"
+            />
+            <button
+              type="button"
+              disabled={isSubscribing}
+              className="h-12 rounded-full bg-white px-6 text-sm tracking-[0.15em] uppercase text-moonberry-brown disabled:cursor-not-allowed disabled:opacity-60"
+              onClick={async () => {
+                if (!email.includes('@')) {
+                  setNewsletterMessage('Please enter a valid email address.')
+                  return
+                }
+                setIsSubscribing(true)
+                await new Promise((resolve) => setTimeout(resolve, 600))
+                setNewsletterMessage('Thanks for subscribing. You will receive launch alerts soon.')
+                setEmail('')
+                setIsSubscribing(false)
+              }}
+            >
+              {isSubscribing ? 'Subscribing...' : 'Subscribe'}
+            </button>
           </div>
+          {newsletterMessage ? (
+            <p className="mt-3 text-sm text-white/80" aria-live="polite">
+              {newsletterMessage}
+            </p>
+          ) : null}
+        </div>
+      </section>
+
+      <section className="section-shell pb-10">
+        <div className="grid gap-3 rounded-3xl border border-moonberry-rose/25 bg-white/70 p-6 text-center md:grid-cols-4 md:text-left">
+          <p className="text-sm text-moonberry-brown">UPI, cards and wallet payments</p>
+          <p className="text-sm text-moonberry-brown">Cash on Delivery in serviceable PIN codes</p>
+          <p className="text-sm text-moonberry-brown">Free shipping above Rs. 999</p>
+          <p className="text-sm text-moonberry-brown">Made for Indian weather and routines</p>
         </div>
       </section>
     </div>
@@ -113,15 +156,55 @@ export function HomePage({ onQuickAdd }) {
 
 export function ShopPage({ onQuickAdd }) {
   const [activeCategory, setActiveCategory] = useState('All')
-  const categories = ['All', ...new Set(products.map((product) => product.category))]
-  const visibleProducts =
-    activeCategory === 'All'
-      ? products
-      : products.filter((product) => product.category === activeCategory)
+  const [query, setQuery] = useState('')
+  const [sortBy, setSortBy] = useState('featured')
+  const categories = ['All', 'Under Rs. 499', ...new Set(products.map((product) => product.category))]
+  const visibleProducts = useMemo(() => {
+    const filteredByCategory =
+      activeCategory === 'All'
+        ? products
+        : activeCategory === 'Under Rs. 499'
+          ? products.filter((product) => product.price < 499)
+          : products.filter((product) => product.category === activeCategory)
+
+    const filteredByQuery = filteredByCategory.filter((product) =>
+      `${product.name} ${product.category} ${product.collection}`
+        .toLowerCase()
+        .includes(query.toLowerCase().trim()),
+    )
+
+    const sorted = [...filteredByQuery]
+    if (sortBy === 'price-low-high') {
+      sorted.sort((a, b) => a.price - b.price)
+    } else if (sortBy === 'price-high-low') {
+      sorted.sort((a, b) => b.price - a.price)
+    } else if (sortBy === 'name-a-z') {
+      sorted.sort((a, b) => a.name.localeCompare(b.name))
+    }
+    return sorted
+  }, [activeCategory, query, sortBy])
 
   return (
     <main className="section-shell py-16">
       <SectionHeading eyebrow="Shop" title="All Products" description="Luxury perfumes, skincare, cosmetics, and nail care." />
+      <div className="mb-6 grid gap-3 rounded-2xl border border-moonberry-rose/30 bg-white/70 p-4 md:grid-cols-[1fr_auto]">
+        <input
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          placeholder="Search products..."
+          className="h-11 rounded-xl border border-moonberry-rose/40 bg-white px-4 outline-none"
+        />
+        <select
+          value={sortBy}
+          onChange={(event) => setSortBy(event.target.value)}
+          className="h-11 rounded-xl border border-moonberry-rose/40 bg-white px-4 text-sm text-moonberry-brown outline-none"
+        >
+          <option value="featured">Sort: Featured</option>
+          <option value="price-low-high">Price: Low to High</option>
+          <option value="price-high-low">Price: High to Low</option>
+          <option value="name-a-z">Name: A to Z</option>
+        </select>
+      </div>
       <div className="mb-8 flex flex-wrap gap-3">
         {categories.map((category) => (
           <button
@@ -138,11 +221,21 @@ export function ShopPage({ onQuickAdd }) {
           </button>
         ))}
       </div>
-      <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
-        {visibleProducts.map((product) => (
-          <ProductCard key={product.id} product={product} onQuickAdd={onQuickAdd} />
-        ))}
-      </div>
+      <p className="mb-5 text-sm text-moonberry-mauve">
+        Showing {visibleProducts.length} product{visibleProducts.length === 1 ? '' : 's'}
+      </p>
+      {visibleProducts.length > 0 ? (
+        <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+          {visibleProducts.map((product) => (
+            <ProductCard key={product.id} product={product} onQuickAdd={onQuickAdd} />
+          ))}
+        </div>
+      ) : (
+        <div className="rounded-3xl border border-dashed border-moonberry-rose/40 bg-white/60 p-8 text-center">
+          <p className="text-moonberry-brown">No products found for your filters.</p>
+          <p className="mt-2 text-sm text-moonberry-mauve">Try changing category, search, or sort options.</p>
+        </div>
+      )}
     </main>
   )
 }
@@ -170,6 +263,8 @@ export function CollectionsPage() {
 export function ProductPage({ onQuickAdd }) {
   const { slug } = useParams()
   const product = useMemo(() => products.find((item) => item.slug === slug) || products[0], [slug])
+  const [pincode, setPincode] = useState('')
+  const [deliveryMessage, setDeliveryMessage] = useState('')
   const [selection, setSelection] = useState({
     slug: product.slug,
     activeImage: product.images[0],
@@ -180,9 +275,16 @@ export function ProductPage({ onQuickAdd }) {
     selection.slug === product.slug ? selection.activeImage : product.images[0]
   const selectedSize =
     selection.slug === product.slug ? selection.selectedSize : product.sizes[0]
+  const hasDiscount = product.compareAtPrice && product.compareAtPrice > product.price
+  const savings = hasDiscount ? product.compareAtPrice - product.price : 0
 
   return (
-    <main className="section-shell py-16">
+    <main className="section-shell pb-28 pt-16 md:pb-16">
+      <p className="mb-5 text-sm text-moonberry-mauve">
+        <Link to="/" className="hover:text-moonberry-brown">Home</Link> /{' '}
+        <Link to="/shop" className="hover:text-moonberry-brown">Shop</Link> /{' '}
+        <span className="text-moonberry-brown">{product.name}</span>
+      </p>
       <div className="grid gap-8 lg:grid-cols-2">
         <div>
           <img src={activeImage} alt={product.name} className="h-[620px] w-full rounded-3xl object-cover" />
@@ -191,7 +293,9 @@ export function ProductPage({ onQuickAdd }) {
               <button
                 key={image}
                 type="button"
-                className="overflow-hidden rounded-2xl"
+                className={`overflow-hidden rounded-2xl border-2 transition ${
+                  activeImage === image ? 'border-moonberry-brown' : 'border-transparent'
+                }`}
                 onClick={() =>
                   setSelection((prev) => ({
                     ...prev,
@@ -208,7 +312,16 @@ export function ProductPage({ onQuickAdd }) {
         <div className="rounded-3xl bg-white/75 p-8">
           <p className="text-xs uppercase tracking-[0.2em] text-moonberry-mauve">{product.collection}</p>
           <h1 className="mt-2 font-serif text-5xl leading-none">{product.name}</h1>
-          <p className="mt-4 text-2xl">${product.price}.00</p>
+          <div className="mt-4 flex items-end gap-3">
+            <p className="text-2xl">{formatINR(product.price)}</p>
+            {hasDiscount ? (
+              <p className="text-sm text-moonberry-mauve line-through">{formatINR(product.compareAtPrice)}</p>
+            ) : null}
+          </div>
+          {hasDiscount ? (
+            <p className="mt-1 text-sm text-green-700">You save {formatINR(savings)} on this item</p>
+          ) : null}
+          <p className="mt-1 text-sm text-moonberry-mauve">Inclusive of estimated GST</p>
           <p className="mt-4 text-moonberry-mauve">{product.description}</p>
           <div className="mt-4 flex items-center gap-2">
             {product.shadeHex?.map((shade) => (
@@ -249,6 +362,39 @@ export function ProductPage({ onQuickAdd }) {
           >
             Add to Cart
           </button>
+          <div className="mt-3 grid gap-3 rounded-2xl border border-moonberry-rose/30 bg-white/90 p-4 text-sm text-moonberry-brown sm:grid-cols-2">
+            <span>UPI / Cards / Wallets</span>
+            <span>COD on eligible PIN codes</span>
+          </div>
+
+          <div className="mt-4 rounded-2xl border border-moonberry-rose/30 p-4">
+            <p className="text-sm font-medium text-moonberry-brown">Check delivery by PIN code</p>
+            <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+              <input
+                value={pincode}
+                onChange={(event) => {
+                  setPincode(event.target.value.replace(/\D/g, '').slice(0, 6))
+                  setDeliveryMessage('')
+                }}
+                placeholder="Enter 6-digit PIN code"
+                className="h-11 flex-1 rounded-xl border border-moonberry-rose/40 px-4 outline-none"
+              />
+              <button
+                type="button"
+                className="h-11 rounded-xl bg-moonberry-brown px-5 text-sm uppercase tracking-widest text-white"
+                onClick={() => {
+                  if (pincode.length !== 6) {
+                    setDeliveryMessage('Please enter a valid 6-digit PIN code.')
+                    return
+                  }
+                  setDeliveryMessage('Delivery in 2-5 days. COD is available for this area.')
+                }}
+              >
+                Check
+              </button>
+            </div>
+            {deliveryMessage ? <p className="mt-2 text-sm text-moonberry-mauve">{deliveryMessage}</p> : null}
+          </div>
 
           <div className="mt-8 space-y-3">
             <details open className="rounded-2xl border border-moonberry-rose/30 p-4">
@@ -270,7 +416,7 @@ export function ProductPage({ onQuickAdd }) {
             </details>
             <details className="rounded-2xl border border-moonberry-rose/30 p-4">
               <summary className="cursor-pointer font-medium">Shipping & Returns</summary>
-              <p className="mt-2 text-sm text-moonberry-mauve">Free shipping over $150. Easy 14-day returns.</p>
+              <p className="mt-2 text-sm text-moonberry-mauve">Free shipping above Rs. 999. Easy 7-day returns.</p>
             </details>
           </div>
         </div>
@@ -287,6 +433,16 @@ export function ProductPage({ onQuickAdd }) {
             ))}
         </div>
       </section>
+
+      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-moonberry-rose/30 bg-white/95 p-3 backdrop-blur md:hidden">
+        <button
+          type="button"
+          className="w-full rounded-full bg-moonberry-brown px-6 py-3 text-sm uppercase tracking-[0.15em] text-white"
+          onClick={() => onQuickAdd(product)}
+        >
+          Add to Cart · {formatINR(product.price)}
+        </button>
+      </div>
     </main>
   )
 }
@@ -312,24 +468,186 @@ export function AboutPage() {
 }
 
 export function ContactPage() {
+  const [form, setForm] = useState({ name: '', email: '', message: '' })
+  const [formStatus, setFormStatus] = useState({ type: '', message: '' })
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
   return (
     <main className="section-shell py-16">
       <SectionHeading eyebrow="Contact" title="We'd love to hear from you." />
       <div className="grid gap-6 md:grid-cols-2">
         <div className="rounded-3xl bg-white/80 p-8">
           <p className="mb-5 text-moonberry-mauve">For beauty consultations, wholesale, and customer support inquiries.</p>
-          <p>Email: hello@moonberry.com</p>
-          <p className="mt-2">Phone: +1 212 000 0000</p>
-          <p className="mt-2">Studio: New York, NY</p>
+          <p>Email: moonberry.bussness@gmail.com</p>
+          <p className="mt-2">Phone: 90000000000</p>
+          <p className="mt-2">Studio: Ulhasnagar 3, Thane, Mumbai, Maharashtra, India</p>
         </div>
-        <form className="rounded-3xl bg-white/80 p-8">
+        <form
+          className="rounded-3xl bg-white/80 p-8"
+          onSubmit={async (event) => {
+            event.preventDefault()
+            if (!form.name.trim() || !form.email.includes('@') || form.message.trim().length < 10) {
+              setFormStatus({
+                type: 'error',
+                message: 'Please fill all fields correctly before submitting.',
+              })
+              return
+            }
+            setIsSubmitting(true)
+            await new Promise((resolve) => setTimeout(resolve, 700))
+            setFormStatus({
+              type: 'success',
+              message: 'Thank you. Our team will reach out within 24 hours.',
+            })
+            setForm({ name: '', email: '', message: '' })
+            setIsSubmitting(false)
+          }}
+        >
           <div className="space-y-3">
-            <input placeholder="Full Name" className="h-12 w-full rounded-2xl border border-moonberry-rose/40 bg-white px-4 outline-none" />
-            <input placeholder="Email Address" className="h-12 w-full rounded-2xl border border-moonberry-rose/40 bg-white px-4 outline-none" />
-            <textarea placeholder="Message" rows={5} className="w-full rounded-2xl border border-moonberry-rose/40 bg-white p-4 outline-none" />
+            <input
+              placeholder="Full Name"
+              value={form.name}
+              onChange={(event) => {
+                setForm((prev) => ({ ...prev, name: event.target.value }))
+                setFormStatus({ type: '', message: '' })
+              }}
+              className="h-12 w-full rounded-2xl border border-moonberry-rose/40 bg-white px-4 outline-none"
+            />
+            <input
+              placeholder="Email Address"
+              value={form.email}
+              onChange={(event) => {
+                setForm((prev) => ({ ...prev, email: event.target.value }))
+                setFormStatus({ type: '', message: '' })
+              }}
+              className="h-12 w-full rounded-2xl border border-moonberry-rose/40 bg-white px-4 outline-none"
+            />
+            <textarea
+              placeholder="Message"
+              rows={5}
+              value={form.message}
+              onChange={(event) => {
+                setForm((prev) => ({ ...prev, message: event.target.value }))
+                setFormStatus({ type: '', message: '' })
+              }}
+              className="w-full rounded-2xl border border-moonberry-rose/40 bg-white p-4 outline-none"
+            />
           </div>
-          <button type="submit" className="mt-4 rounded-full bg-moonberry-brown px-7 py-3 text-sm uppercase tracking-[0.15em] text-white">Send Message</button>
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            className="mt-4 rounded-full bg-moonberry-brown px-7 py-3 text-sm uppercase tracking-[0.15em] text-white disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {isSubmitting ? 'Sending...' : 'Send Message'}
+          </button>
+          {formStatus.message ? (
+            <p
+              className={`mt-3 text-sm ${formStatus.type === 'error' ? 'text-red-600' : 'text-moonberry-mauve'}`}
+              aria-live="polite"
+            >
+              {formStatus.message}
+            </p>
+          ) : null}
         </form>
+      </div>
+    </main>
+  )
+}
+
+export function CheckoutPage({ cartItems = [], onQtyChange, onRemove }) {
+  const subtotal = cartItems.reduce((sum, item) => sum + item.price * item.qty, 0)
+  const shipping = subtotal === 0 || subtotal >= 999 ? 0 : 99
+  const total = subtotal + shipping
+  const [isProcessing, setIsProcessing] = useState(false)
+  const [checkoutMessage, setCheckoutMessage] = useState('')
+
+  return (
+    <main className="section-shell py-16">
+      <SectionHeading
+        eyebrow="Checkout"
+        title="Secure Checkout Mock"
+        description="This flow is ready for Shopify checkout wiring."
+      />
+      <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
+        <section className="space-y-4 rounded-3xl bg-white/75 p-6">
+          {cartItems.length === 0 ? (
+            <p className="text-moonberry-mauve">Your cart is empty. Add products to continue.</p>
+          ) : (
+            cartItems.map((item) => (
+              <div key={item.id} className="flex gap-4 rounded-2xl border border-moonberry-rose/30 p-4">
+                <img src={item.image} alt={item.name} className="h-24 w-20 rounded-xl object-cover" />
+                <div className="flex-1">
+                  <h4 className="font-medium text-moonberry-brown">{item.name}</h4>
+                  <p className="mt-1 text-sm text-moonberry-mauve">{formatINR(item.price)}</p>
+                  <div className="mt-3 flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => onQtyChange(item.id, item.qty - 1)}
+                      className="h-8 w-8 rounded-full border border-moonberry-rose/40"
+                    >
+                      -
+                    </button>
+                    <span className="text-sm text-moonberry-mauve">Qty {item.qty}</span>
+                    <button
+                      type="button"
+                      onClick={() => onQtyChange(item.id, item.qty + 1)}
+                      className="h-8 w-8 rounded-full border border-moonberry-rose/40"
+                    >
+                      +
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => onRemove(item.id)}
+                      className="ml-auto text-sm text-moonberry-mauve underline"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
+        </section>
+        <aside className="rounded-3xl bg-white/80 p-6">
+          <h3 className="font-serif text-3xl text-moonberry-brown">Order Summary</h3>
+          <div className="mt-5 space-y-3 text-sm">
+            <div className="flex items-center justify-between">
+              <span>Subtotal</span>
+              <span>{formatINR(subtotal)}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span>Shipping</span>
+              <span>{shipping === 0 ? 'Free' : formatINR(shipping)}</span>
+            </div>
+            <div className="flex items-center justify-between border-t border-moonberry-rose/30 pt-3 text-base font-medium">
+              <span>Total</span>
+              <span>{formatINR(total)}</span>
+            </div>
+          </div>
+          <button
+            type="button"
+            disabled={cartItems.length === 0}
+            onClick={async () => {
+              setIsProcessing(true)
+              setCheckoutMessage('')
+              await new Promise((resolve) => setTimeout(resolve, 900))
+              setCheckoutMessage('Checkout initialized. Shopify payment redirect will plug in here.')
+              setIsProcessing(false)
+            }}
+            className="mt-6 w-full rounded-full bg-moonberry-brown px-6 py-3 text-sm uppercase tracking-[0.15em] text-white disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {isProcessing ? 'Processing...' : 'Continue to Payment (Mock)'}
+          </button>
+          {checkoutMessage ? (
+            <p className="mt-3 text-xs text-moonberry-mauve" aria-live="polite">
+              {checkoutMessage}
+            </p>
+          ) : (
+            <p className="mt-3 text-xs text-moonberry-mauve">
+              Next step: replace this action with Shopify checkout URL creation.
+            </p>
+          )}
+        </aside>
       </div>
     </main>
   )
