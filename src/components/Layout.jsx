@@ -401,7 +401,7 @@ export function Footer() {
         <div>
           <h3 className="font-serif text-3xl">Moonberry</h3>
           <p className="mt-2 max-w-sm text-sm text-moonberry-mauve">
-            A modern luxury beauty brand crafted for soft femininity and refined self-care rituals.
+            A modern beauty brand crafted for all identities, with refined self-care rituals.
           </p>
         </div>
         <div>

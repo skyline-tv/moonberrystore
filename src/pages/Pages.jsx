@@ -16,10 +16,10 @@ export function HomePage({ onQuickAdd }) {
         <div className="relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-[#f7f1ee] via-[#eedfe2] to-[#cfaeb4] p-8 md:p-12">
           <div className="pointer-events-none absolute -left-8 -top-16 h-52 w-52 rounded-full bg-white/40 blur-2xl" />
           <div className="pointer-events-none absolute -bottom-16 right-0 h-64 w-64 rounded-full bg-moonberry-mauve/30 blur-3xl" />
-          <p className="mb-4 text-xs uppercase tracking-[0.28em] text-moonberry-mauve">Moonberry Beauty House</p>
-          <h1 className="editorial-heading">Perfume, Beauty, Nails - In Soft Luxury.</h1>
+          <p className="mb-4 text-xs uppercase tracking-[0.28em] text-moonberry-mauve">Moonberry Beauty Studio</p>
+          <h1 className="editorial-heading">Perfume, Skincare, Makeup and Nails - For Everyone.</h1>
           <p className="mt-6 max-w-lg text-moonberry-mauve">
-            Discover premium fragrances, skincare, cosmetics, and nail essentials crafted for modern feminine elegance.
+            Discover premium fragrances, skincare, cosmetics, and nail essentials designed for every style, tone, and identity.
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
             <Link to="/shop" className="rounded-full bg-moonberry-brown px-7 py-3 text-sm tracking-[0.15em] uppercase text-white transition hover:opacity-90">Shop Now</Link>
@@ -80,7 +80,7 @@ export function HomePage({ onQuickAdd }) {
         <div className="flex items-center rounded-3xl bg-white/70 p-8">
           <div>
             <p className="text-xs uppercase tracking-[0.2em] text-moonberry-mauve">Our Story</p>
-            <h2 className="mt-2 font-serif text-5xl leading-none">Soft power, crafted beautifully.</h2>
+            <h2 className="mt-2 font-serif text-5xl leading-none">Self-expression, crafted beautifully.</h2>
             <p className="mt-5 text-moonberry-mauve">
               Moonberry was built around the idea that beauty can feel calm, confident, and exquisitely modern. Every formula is developed with meticulous attention to texture, tone, scent, and finish.
             </p>
@@ -450,7 +450,7 @@ export function ProductPage({ onQuickAdd }) {
 export function AboutPage() {
   return (
     <main className="section-shell py-16">
-      <SectionHeading eyebrow="About Moonberry" title="Modern femininity with timeless intent." />
+      <SectionHeading eyebrow="About Moonberry" title="Modern beauty with timeless intent." />
       <div className="grid gap-6 md:grid-cols-2">
         <img src="https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?auto=format&fit=crop&w=1300&q=80" alt="Moonberry beauty products" className="h-[520px] w-full rounded-3xl object-cover" />
         <div className="rounded-3xl bg-white/75 p-8 text-moonberry-mauve">

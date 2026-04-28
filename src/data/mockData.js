@@ -257,7 +257,7 @@ export const testimonials = [
     id: 1,
     name: 'Aanya R.',
     quote:
-      'Moonberry perfumes and beauty essentials feel so elegant and feminine.',
+      'Moonberry perfumes and beauty essentials feel elegant, modern, and expressive.',
   },
   {
     id: 2,

@@ -5,10 +5,10 @@
   --font-sans: 'Inter', sans-serif;
   --font-serif: 'Cormorant Garamond', serif;
 
-  --color-moonberry-mauve: #8b6f74;
-  --color-moonberry-rose: #b08d92;
-  --color-moonberry-cream: #f5f1ee;
-  --color-moonberry-brown: #4a3b3d;
+  --color-moonberry-mauve: #5a2b23;
+  --color-moonberry-rose: #8a4b3f;
+  --color-moonberry-cream: #f2eceb;
+  --color-moonberry-brown: #3c1e18;
 }
 
 * {
@@ -31,10 +31,15 @@ body {
   color: var(--color-moonberry-brown);
   background: radial-gradient(
       circle at 30% -10%,
-      rgba(176, 141, 146, 0.22),
+      rgba(60, 30, 24, 0.34),
       transparent 40%
     ),
-    linear-gradient(180deg, #faf7f5, var(--color-moonberry-cream));
+    radial-gradient(
+      circle at 90% 10%,
+      rgba(90, 43, 35, 0.2),
+      transparent 36%
+    ),
+    linear-gradient(180deg, #f8f4f3, var(--color-moonberry-cream));
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
 }
@@ -74,8 +79,8 @@ select:focus-visible {
 }
 
 ::selection {
-  background: rgba(176, 141, 146, 0.35);
-  color: #3f3032;
+  background: rgba(60, 30, 24, 0.4);
+  color: #f2eceb;
 }
 
 :focus-visible {
@@ -99,7 +104,7 @@ select:focus-visible {
 }
 
 .glass {
-  @apply border border-white/50 bg-white/70 backdrop-blur-xl;
+  @apply border border-white/35 bg-white/55 backdrop-blur-xl;
 }
 
 .editorial-heading {
