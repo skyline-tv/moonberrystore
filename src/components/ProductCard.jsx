@@ -26,7 +26,7 @@ export function ProductCard({ product, onQuickAdd }) {
 
   return (
     <article className="group rounded-3xl border border-white/60 bg-white/70 p-3 soft-shadow transition duration-500 hover:-translate-y-1 hover:shadow-[0_18px_50px_rgba(74,59,61,0.16)]">
-      <div className="relative overflow-hidden rounded-2xl">
+      <Link to={`/product/${product.slug}`} className="relative block overflow-hidden rounded-2xl">
         <div className="absolute left-3 top-3 z-10 flex gap-2">
           {product.bestSeller ? (
             <span className="rounded-full bg-moonberry-brown px-3 py-1 text-[10px] uppercase tracking-[0.14em] text-white">
@@ -45,7 +45,7 @@ export function ProductCard({ product, onQuickAdd }) {
           className="h-[360px] w-full object-cover transition duration-700 group-hover:scale-105"
           loading="lazy"
         />
-      </div>
+      </Link>
       <div className="px-1 pb-2 pt-4">
         <div className="mb-2 flex items-start justify-between gap-3">
           <div>
