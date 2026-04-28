@@ -1,10 +1,10 @@
 import { useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { collections, products, testimonials } from '../data/mockData'
+import { testimonials } from '../data/mockData'
 import { ProductCard, SectionHeading } from '../components/ProductCard'
 import { formatINR } from '../lib/currency'
 
-export function HomePage({ onQuickAdd }) {
+export function HomePage({ onQuickAdd, products = [], collections = [] }) {
   const bestSellers = products.filter((item) => item.bestSeller)
   const [email, setEmail] = useState('')
   const [newsletterMessage, setNewsletterMessage] = useState('')
@@ -154,7 +154,7 @@ export function HomePage({ onQuickAdd }) {
   )
 }
 
-export function ShopPage({ onQuickAdd }) {
+export function ShopPage({ onQuickAdd, products = [] }) {
   const [activeCategory, setActiveCategory] = useState('All')
   const [query, setQuery] = useState('')
   const [sortBy, setSortBy] = useState('featured')
@@ -182,7 +182,7 @@ export function ShopPage({ onQuickAdd }) {
       sorted.sort((a, b) => a.name.localeCompare(b.name))
     }
     return sorted
-  }, [activeCategory, query, sortBy])
+  }, [activeCategory, products, query, sortBy])
 
   return (
     <main className="section-shell py-16">
@@ -240,7 +240,7 @@ export function ShopPage({ onQuickAdd }) {
   )
 }
 
-export function CollectionsPage() {
+export function CollectionsPage({ collections = [] }) {
   return (
     <main className="section-shell py-16">
       <SectionHeading eyebrow="Collections" title="Browse by Edit" />
@@ -260,16 +260,42 @@ export function CollectionsPage() {
   )
 }
 
-export function ProductPage({ onQuickAdd }) {
+export function ProductPage({ onQuickAdd, products = [] }) {
   const { slug } = useParams()
-  const product = useMemo(() => products.find((item) => item.slug === slug) || products[0], [slug])
+  const product = useMemo(() => products.find((item) => item.slug === slug) || null, [products, slug])
+  const initialProduct = product || {
+    slug: '',
+    images: [''],
+    sizes: ['Standard'],
+    compareAtPrice: 0,
+    price: 0,
+  }
   const [pincode, setPincode] = useState('')
   const [deliveryMessage, setDeliveryMessage] = useState('')
   const [selection, setSelection] = useState({
-    slug: product.slug,
-    activeImage: product.images[0],
-    selectedSize: product.sizes[0],
+    slug: initialProduct.slug,
+    activeImage: initialProduct.images[0],
+    selectedSize: initialProduct.sizes[0],
   })
+
+  if (!product) {
+    return (
+      <main className="section-shell py-16">
+        <div className="rounded-3xl border border-moonberry-rose/30 bg-white/70 p-10 text-center">
+          <h2 className="font-serif text-4xl text-moonberry-brown">Product not found</h2>
+          <p className="mt-3 text-moonberry-mauve">
+            This product is unavailable or not published in Shopify.
+          </p>
+          <Link
+            to="/shop"
+            className="mt-6 inline-flex rounded-full bg-moonberry-brown px-6 py-3 text-sm uppercase tracking-[0.12em] text-white"
+          >
+            Back to Shop
+          </Link>
+        </div>
+      </main>
+    )
+  }
 
   const activeImage =
     selection.slug === product.slug ? selection.activeImage : product.images[0]
