@@ -8,6 +8,7 @@ const navLinks = [
   { label: 'Shop', to: '/shop' },
   { label: 'Collections', to: '/collections' },
   { label: 'About', to: '/about' },
+  { label: 'FAQ', to: '/faq' },
   { label: 'Contact', to: '/contact' },
 ]
 
@@ -16,6 +17,8 @@ export function Navbar({
   onOpenMobile,
   onOpenSearch,
   cartCount = 0,
+  loggedIn = false,
+  onLogout,
 }) {
   const [scrolled, setScrolled] = useState(false)
   const [logoMissing, setLogoMissing] = useState(false)
@@ -103,6 +106,46 @@ export function Navbar({
             ))}
           </nav>
           <div className="flex min-w-[50px] items-center justify-end gap-2 md:min-w-0 md:flex-1 md:gap-3">
+            <div className="hidden items-center gap-3 md:flex">
+              {loggedIn ? (
+                <>
+                  <NavLink
+                    to="/account"
+                    className={({ isActive }) =>
+                      `whitespace-nowrap pb-1 text-xs tracking-[0.12em] uppercase transition-colors ${
+                        isActive
+                          ? 'text-moonberry-brown'
+                          : 'text-moonberry-mauve hover:text-moonberry-brown'
+                      }`
+                    }
+                  >
+                    Account
+                  </NavLink>
+                  <button
+                    type="button"
+                    onClick={onLogout}
+                    className="whitespace-nowrap pb-1 text-xs tracking-[0.12em] uppercase text-moonberry-mauve transition hover:text-moonberry-brown"
+                  >
+                    Log out
+                  </button>
+                </>
+              ) : (
+                <>
+                  <Link
+                    to="/login"
+                    className="whitespace-nowrap pb-1 text-xs tracking-[0.12em] uppercase text-moonberry-mauve transition hover:text-moonberry-brown"
+                  >
+                    Log in
+                  </Link>
+                  <Link
+                    to="/signup"
+                    className="whitespace-nowrap pb-1 text-xs tracking-[0.12em] uppercase text-moonberry-mauve transition hover:text-moonberry-brown"
+                  >
+                    Sign up
+                  </Link>
+                </>
+              )}
+            </div>
             <button
               type="button"
               className="rounded-full border border-white/60 bg-white/65 p-2.5 text-moonberry-brown transition hover:bg-white"
@@ -147,7 +190,7 @@ export function IndiaTrustBar() {
   )
 }
 
-export function MobileMenu({ open, onClose }) {
+export function MobileMenu({ open, onClose, loggedIn = false, onLogout }) {
   return (
     <div
       className={`fixed inset-0 z-50 transition ${open ? 'pointer-events-auto' : 'pointer-events-none'}`}
@@ -187,6 +230,46 @@ export function MobileMenu({ open, onClose }) {
               {link.label}
             </NavLink>
           ))}
+          <div className="mt-8 border-t border-moonberry-rose/25 pt-6">
+            {loggedIn ? (
+              <div className="flex flex-col gap-2">
+                <NavLink
+                  to="/account"
+                  className="rounded-xl px-3 py-2 text-lg text-moonberry-brown/90"
+                  onClick={onClose}
+                >
+                  Account
+                </NavLink>
+                <button
+                  type="button"
+                  className="rounded-xl px-3 py-2 text-left text-lg text-moonberry-brown/90"
+                  onClick={() => {
+                    onClose()
+                    onLogout?.()
+                  }}
+                >
+                  Log out
+                </button>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-2">
+                <NavLink
+                  to="/login"
+                  className="rounded-xl px-3 py-2 text-lg text-moonberry-brown/90"
+                  onClick={onClose}
+                >
+                  Log in
+                </NavLink>
+                <NavLink
+                  to="/signup"
+                  className="rounded-xl px-3 py-2 text-lg text-moonberry-brown/90"
+                  onClick={onClose}
+                >
+                  Sign up
+                </NavLink>
+              </div>
+            )}
+          </div>
         </div>
       </aside>
     </div>
@@ -313,7 +396,7 @@ export function CartDrawer({
             </div>
           )}
           {items.map((item) => (
-            <div key={item.id} className="flex gap-4 rounded-2xl border border-moonberry-rose/30 p-3">
+            <div key={item.lineId || item.id} className="flex gap-4 rounded-2xl border border-moonberry-rose/30 p-3">
               <img src={item.image} alt={item.name} className="h-24 w-20 rounded-xl object-cover" />
               <div className="flex-1">
                 <h4 className="font-medium text-moonberry-brown">{item.name}</h4>
@@ -387,7 +470,9 @@ export function CartDrawer({
           >
             Clear Cart
           </button>
-          <p className="mt-3 text-center text-xs text-moonberry-mauve">Pay securely via UPI, cards, net banking and wallets.</p>
+          <p className="mt-3 text-center text-xs text-moonberry-mauve">
+            Next step: review on the checkout page, then pay securely on Shopify.
+          </p>
         </div>
       </aside>
     </div>
@@ -406,10 +491,32 @@ export function Footer() {
         </div>
         <div>
           <h4 className="text-xs tracking-[0.2em] uppercase text-moonberry-mauve">Customer Care</h4>
-          <ul className="mt-3 space-y-2">
-            <li>Shipping & Returns</li>
-            <li>Ingredients & Usage</li>
-            <li>Privacy Policy</li>
+          <ul className="mt-3 space-y-2 text-sm text-moonberry-brown">
+            <li>
+              <Link to="/shipping-returns" className="hover:text-moonberry-mauve">
+                Shipping & returns
+              </Link>
+            </li>
+            <li>
+              <Link to="/ingredients" className="hover:text-moonberry-mauve">
+                Ingredients & usage
+              </Link>
+            </li>
+            <li>
+              <Link to="/faq" className="hover:text-moonberry-mauve">
+                FAQ
+              </Link>
+            </li>
+            <li>
+              <Link to="/privacy" className="hover:text-moonberry-mauve">
+                Privacy policy
+              </Link>
+            </li>
+            <li>
+              <Link to="/terms" className="hover:text-moonberry-mauve">
+                Terms of use
+              </Link>
+            </li>
           </ul>
         </div>
         <div>

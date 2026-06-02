@@ -1,8 +1,10 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
+import { CheckCircle2 } from 'lucide-react'
 import { testimonials } from '../data/mockData'
 import { ProductCard, SectionHeading } from '../components/ProductCard'
 import { formatINR } from '../lib/currency'
+import { getCollectionByHandle, hasShopifyConfig, pickVariantForOption } from '../lib/shopify'
 
 export function HomePage({ onQuickAdd, products = [], collections = [] }) {
   const bestSellers = products.filter((item) => item.bestSeller)
@@ -47,7 +49,11 @@ export function HomePage({ onQuickAdd, products = [], collections = [] }) {
         />
         <div className="grid gap-5 md:grid-cols-3">
           {collections.map((collection) => (
-            <article key={collection.id} className="group relative overflow-hidden rounded-3xl">
+            <Link
+              key={collection.id}
+              to={`/collections/${collection.slug}`}
+              className="group relative block overflow-hidden rounded-3xl"
+            >
               <img
                 src={collection.image}
                 alt={collection.name}
@@ -57,7 +63,7 @@ export function HomePage({ onQuickAdd, products = [], collections = [] }) {
                 <p className="mt-44 text-xs uppercase tracking-[0.2em]">Collection</p>
                 <h3 className="font-serif text-3xl">{collection.name}</h3>
               </div>
-            </article>
+            </Link>
           ))}
         </div>
       </section>
@@ -246,12 +252,20 @@ export function CollectionsPage({ collections = [] }) {
       <SectionHeading eyebrow="Collections" title="Browse by Edit" />
       <div className="space-y-6">
         {collections.map((collection) => (
-          <article key={collection.id} className="grid gap-5 overflow-hidden rounded-3xl bg-white/80 md:grid-cols-[1.3fr_1fr]">
+          <article
+            key={collection.id}
+            className="grid gap-5 overflow-hidden rounded-3xl bg-white/80 md:grid-cols-[1.3fr_1fr]"
+          >
             <img src={collection.image} alt={collection.name} className="h-80 w-full object-cover" />
             <div className="p-8">
               <h3 className="font-serif text-4xl">{collection.name}</h3>
               <p className="mt-3 text-moonberry-mauve">{collection.description}</p>
-              <button type="button" className="mt-6 rounded-full border border-moonberry-rose/50 px-6 py-2 text-sm uppercase tracking-[0.14em]">View Collection</button>
+              <Link
+                to={`/collections/${collection.slug}`}
+                className="mt-6 inline-flex rounded-full border border-moonberry-rose/50 px-6 py-2 text-sm uppercase tracking-[0.14em] transition hover:bg-moonberry-cream"
+              >
+                View Collection
+              </Link>
             </div>
           </article>
         ))}
@@ -260,23 +274,132 @@ export function CollectionsPage({ collections = [] }) {
   )
 }
 
+export function CollectionDetailPage({ onQuickAdd }) {
+  const { slug } = useParams()
+  const [collection, setCollection] = useState(null)
+  const [products, setProducts] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [notFound, setNotFound] = useState(false)
+
+  useEffect(() => {
+    let cancelled = false
+    ;(async () => {
+      if (!hasShopifyConfig || !slug) {
+        setLoading(false)
+        setNotFound(true)
+        return
+      }
+      setLoading(true)
+      setNotFound(false)
+      try {
+        const result = await getCollectionByHandle(slug)
+        if (cancelled) return
+        if (!result || !result.collection) {
+          setCollection(null)
+          setProducts([])
+          setNotFound(true)
+        } else {
+          setCollection(result.collection)
+          setProducts(result.products)
+          setNotFound(false)
+        }
+      } catch {
+        if (!cancelled) {
+          setNotFound(true)
+          setCollection(null)
+          setProducts([])
+        }
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [slug])
+
+  if (loading) {
+    return (
+      <main className="section-shell py-20">
+        <p className="text-center text-moonberry-mauve">Loading collection...</p>
+      </main>
+    )
+  }
+
+  if (notFound || !collection) {
+    return (
+      <main className="section-shell py-16">
+        <div className="rounded-3xl border border-moonberry-rose/30 bg-white/70 p-10 text-center">
+          <h2 className="font-serif text-3xl text-moonberry-brown">Collection not found</h2>
+          <p className="mt-3 text-moonberry-mauve">This collection may not exist or is unavailable.</p>
+          <Link
+            to="/collections"
+            className="mt-6 inline-flex rounded-full bg-moonberry-brown px-6 py-3 text-sm uppercase tracking-[0.12em] text-white"
+          >
+            All collections
+          </Link>
+        </div>
+      </main>
+    )
+  }
+
+  return (
+    <main className="section-shell py-16">
+      <p className="mb-6 text-sm text-moonberry-mauve">
+        <Link to="/" className="hover:text-moonberry-brown">
+          Home
+        </Link>{' '}
+        /{' '}
+        <Link to="/collections" className="hover:text-moonberry-brown">
+          Collections
+        </Link>{' '}
+        / <span className="text-moonberry-brown">{collection.name}</span>
+      </p>
+      <div className="grid gap-8 lg:grid-cols-[1fr_1.2fr]">
+        <div className="overflow-hidden rounded-3xl">
+          <img src={collection.image} alt={collection.name} className="h-96 w-full object-cover lg:h-full lg:min-h-[420px]" />
+        </div>
+        <div>
+          <p className="text-xs uppercase tracking-[0.2em] text-moonberry-mauve">Collection</p>
+          <h1 className="mt-2 font-serif text-5xl text-moonberry-brown">{collection.name}</h1>
+          <p className="mt-4 text-moonberry-mauve">{collection.description}</p>
+        </div>
+      </div>
+      <div className="mt-14">
+        <h2 className="font-serif text-3xl text-moonberry-brown">Products in this edit</h2>
+        {products.length === 0 ? (
+          <p className="mt-6 rounded-3xl border border-dashed border-moonberry-rose/40 bg-white/60 p-8 text-center text-moonberry-mauve">
+            No products in this collection yet.
+          </p>
+        ) : (
+          <div className="mt-8 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+            {products.map((product) => (
+              <ProductCard key={product.id} product={product} onQuickAdd={onQuickAdd} />
+            ))}
+          </div>
+        )}
+      </div>
+    </main>
+  )
+}
+
 export function ProductPage({ onQuickAdd, products = [] }) {
   const { slug } = useParams()
   const product = useMemo(() => products.find((item) => item.slug === slug) || null, [products, slug])
-  const initialProduct = product || {
-    slug: '',
-    images: [''],
-    sizes: ['Standard'],
-    compareAtPrice: 0,
-    price: 0,
-  }
   const [pincode, setPincode] = useState('')
   const [deliveryMessage, setDeliveryMessage] = useState('')
   const [selection, setSelection] = useState({
-    slug: initialProduct.slug,
-    activeImage: initialProduct.images[0],
-    selectedSize: initialProduct.sizes[0],
+    slug: product?.slug ?? '',
+    activeImage: product?.images?.[0] ?? '',
+    selectedSize: product?.sizes?.[0] ?? 'Standard',
   })
+
+  const selectedVariant = useMemo(() => {
+    if (!product) return { variantId: undefined, price: undefined, compareAtPrice: undefined }
+    const sel =
+      selection.slug === product.slug ? selection.selectedSize : product.sizes[0] || 'Standard'
+    return pickVariantForOption(product, sel)
+  }, [product, selection.slug, selection.selectedSize])
 
   if (!product) {
     return (
@@ -301,8 +424,20 @@ export function ProductPage({ onQuickAdd, products = [] }) {
     selection.slug === product.slug ? selection.activeImage : product.images[0]
   const selectedSize =
     selection.slug === product.slug ? selection.selectedSize : product.sizes[0]
-  const hasDiscount = product.compareAtPrice && product.compareAtPrice > product.price
-  const savings = hasDiscount ? product.compareAtPrice - product.price : 0
+  const displayPrice = selectedVariant.price ?? product.price
+  const displayCompare = selectedVariant.compareAtPrice
+  const hasDiscount = displayCompare && displayCompare > displayPrice
+  const savings = hasDiscount ? displayCompare - displayPrice : 0
+
+  const handleAddToCart = () => {
+    const v = pickVariantForOption(product, selectedSize)
+    onQuickAdd({
+      ...product,
+      variantId: v.variantId,
+      price: v.price ?? product.price,
+      compareAtPrice: v.compareAtPrice ?? product.compareAtPrice,
+    })
+  }
 
   return (
     <main className="section-shell pb-28 pt-16 md:pb-16">
@@ -339,9 +474,9 @@ export function ProductPage({ onQuickAdd, products = [] }) {
           <p className="text-xs uppercase tracking-[0.2em] text-moonberry-mauve">{product.collection}</p>
           <h1 className="mt-2 font-serif text-5xl leading-none">{product.name}</h1>
           <div className="mt-4 flex items-end gap-3">
-            <p className="text-2xl">{formatINR(product.price)}</p>
+            <p className="text-2xl">{formatINR(displayPrice)}</p>
             {hasDiscount ? (
-              <p className="text-sm text-moonberry-mauve line-through">{formatINR(product.compareAtPrice)}</p>
+              <p className="text-sm text-moonberry-mauve line-through">{formatINR(displayCompare)}</p>
             ) : null}
           </div>
           {hasDiscount ? (
@@ -384,7 +519,7 @@ export function ProductPage({ onQuickAdd, products = [] }) {
           <button
             type="button"
             className="mt-8 w-full rounded-full bg-moonberry-brown px-6 py-3 text-sm uppercase tracking-[0.15em] text-white"
-            onClick={() => onQuickAdd(product)}
+            onClick={handleAddToCart}
           >
             Add to Cart
           </button>
@@ -464,9 +599,9 @@ export function ProductPage({ onQuickAdd, products = [] }) {
         <button
           type="button"
           className="w-full rounded-full bg-moonberry-brown px-6 py-3 text-sm uppercase tracking-[0.15em] text-white"
-          onClick={() => onQuickAdd(product)}
+          onClick={handleAddToCart}
         >
-          Add to Cart · {formatINR(product.price)}
+          Add to Cart · {formatINR(displayPrice)}
         </button>
       </div>
     </main>
@@ -580,100 +715,373 @@ export function ContactPage() {
   )
 }
 
-export function CheckoutPage({ cartItems = [], onQtyChange, onRemove }) {
+export function CheckoutPage({
+  cartItems = [],
+  checkoutUrl = '',
+  checkoutHostnameWarning = '',
+  onQtyChange,
+  onRemove,
+  onContinueToShopify,
+  onRefreshCart,
+  defaultEmail = '',
+}) {
+  const freeShippingThreshold = 999
   const subtotal = cartItems.reduce((sum, item) => sum + item.price * item.qty, 0)
-  const shipping = subtotal === 0 || subtotal >= 999 ? 0 : 99
+  const shipping = subtotal === 0 || subtotal >= freeShippingThreshold ? 0 : 99
+  const gst = Math.round(subtotal * 0.18)
   const total = subtotal + shipping
-  const [isProcessing, setIsProcessing] = useState(false)
-  const [checkoutMessage, setCheckoutMessage] = useState('')
 
+  useEffect(() => {
+    onRefreshCart?.()
+  }, [onRefreshCart])
+
+  return (
+    <main className="section-shell py-12 md:py-16">
+      <SectionHeading
+        eyebrow="Checkout"
+        title="Review your bag"
+        description="Shipping, tax, and payment are completed securely on Shopify — the same catalog as this site."
+      />
+
+      {defaultEmail ? (
+        <p className="mb-6 text-sm text-moonberry-mauve">
+          Signed in as <span className="text-moonberry-brown">{defaultEmail}</span>. Your cart is synced with your
+          session.
+        </p>
+      ) : null}
+
+      {checkoutHostnameWarning ? (
+        <div
+          className="mb-8 rounded-2xl border border-red-300/80 bg-red-50/95 p-5 text-sm text-red-950"
+          role="alert"
+        >
+          <p className="font-medium text-red-950">Checkout cannot open on this site address</p>
+          <p className="mt-2 leading-relaxed">{checkoutHostnameWarning}</p>
+        </div>
+      ) : null}
+
+      {cartItems.length === 0 ? (
+        <div className="mx-auto max-w-xl rounded-3xl bg-white/75 p-10 text-center">
+          <p className="text-moonberry-brown">Your bag is empty.</p>
+          <Link
+            to="/shop"
+            className="mt-6 inline-flex rounded-full bg-moonberry-brown px-7 py-3 text-sm uppercase tracking-[0.15em] text-white"
+          >
+            Browse the shop
+          </Link>
+        </div>
+      ) : (
+        <div className="grid gap-8 lg:grid-cols-[1.15fr_0.85fr] lg:items-start">
+          <div className="space-y-6">
+            <section className="rounded-3xl bg-white/75 p-6 md:p-8">
+              <h2 className="font-serif text-xl text-moonberry-brown">Items in your bag</h2>
+              <div className="mt-4 space-y-4">
+                {cartItems.map((item) => (
+                  <div
+                    key={item.lineId || item.id}
+                    className="flex gap-4 rounded-2xl border border-moonberry-rose/25 p-3"
+                  >
+                    <img src={item.image} alt={item.name} className="h-20 w-16 rounded-lg object-cover" />
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium text-moonberry-brown">{item.name}</p>
+                      {item.variantTitle && item.variantTitle !== 'Default Title' ? (
+                        <p className="text-xs text-moonberry-mauve">{item.variantTitle}</p>
+                      ) : null}
+                      <p className="text-sm text-moonberry-mauve">{formatINR(item.price)} each</p>
+                      <div className="mt-2 flex items-center gap-2">
+                        <button
+                          type="button"
+                          className="h-8 w-8 rounded-full border border-moonberry-rose/40 text-sm"
+                          onClick={() => onQtyChange(item.id, item.qty - 1)}
+                        >
+                          −
+                        </button>
+                        <span className="text-sm">Qty {item.qty}</span>
+                        <button
+                          type="button"
+                          className="h-8 w-8 rounded-full border border-moonberry-rose/40 text-sm"
+                          onClick={() => onQtyChange(item.id, item.qty + 1)}
+                        >
+                          +
+                        </button>
+                        <button
+                          type="button"
+                          className="ml-auto text-xs text-moonberry-mauve underline"
+                          onClick={() => onRemove(item.id)}
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            <div className="rounded-3xl border border-moonberry-rose/25 bg-moonberry-cream/40 p-6 text-sm text-moonberry-brown">
+              <p className="flex gap-2">
+                <CheckCircle2 className="mt-0.5 shrink-0 text-green-700" size={18} aria-hidden />
+                <span>
+                  Estimated totals below include common India shipping and GST assumptions.{' '}
+                  <strong className="font-medium">Final amounts</strong> are confirmed on Shopify checkout.
+                </span>
+              </p>
+            </div>
+          </div>
+
+          <aside className="lg:sticky lg:top-28">
+            <div className="rounded-3xl bg-white/85 p-6 shadow-[0_12px_40px_rgba(74,59,61,0.08)] md:p-8">
+              <h3 className="font-serif text-2xl text-moonberry-brown">Order summary</h3>
+
+              <div className="mt-6 space-y-2 border-b border-moonberry-rose/25 pb-6 text-sm">
+                <div className="flex justify-between">
+                  <span>Subtotal</span>
+                  <span>{formatINR(subtotal)}</span>
+                </div>
+                <div className="flex justify-between text-moonberry-mauve">
+                  <span>Shipping (India)</span>
+                  <span>{shipping === 0 ? 'Free' : formatINR(shipping)}</span>
+                </div>
+                <div className="flex justify-between text-moonberry-mauve">
+                  <span>Est. GST (18%)</span>
+                  <span>{formatINR(gst)}</span>
+                </div>
+                <div className="flex justify-between pt-2 text-base font-semibold text-moonberry-brown">
+                  <span>Estimated total</span>
+                  <span>{formatINR(total)}</span>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => onContinueToShopify?.()}
+                disabled={Boolean(checkoutHostnameWarning)}
+                className="mt-6 w-full rounded-full bg-moonberry-brown px-6 py-3.5 text-sm uppercase tracking-[0.15em] text-white transition hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Continue to secure checkout
+              </button>
+
+              {!checkoutUrl ? (
+                <div className="mt-4 rounded-2xl border border-amber-200/80 bg-amber-50/80 p-3 text-xs text-amber-950">
+                  <p>Checkout link not ready. Try refreshing your cart.</p>
+                  <button
+                    type="button"
+                    className="mt-2 text-moonberry-brown underline underline-offset-2"
+                    onClick={() => onRefreshCart?.()}
+                  >
+                    Refresh cart
+                  </button>
+                </div>
+              ) : null}
+
+              <p className="mt-4 text-center text-[11px] leading-relaxed text-moonberry-mauve">
+                You will leave this site to enter Shopify Checkout. Payment and delivery details are collected there.
+              </p>
+
+              <Link
+                to="/shop"
+                className="mt-4 block text-center text-sm text-moonberry-mauve underline underline-offset-2"
+              >
+                Continue shopping
+              </Link>
+            </div>
+          </aside>
+        </div>
+      )}
+    </main>
+  )
+}
+
+function StaticArticle({ eyebrow, title, children }) {
+  return (
+    <main className="section-shell py-16">
+      <SectionHeading eyebrow={eyebrow} title={title} />
+      <article className="mx-auto max-w-3xl space-y-5 text-[15px] leading-relaxed text-moonberry-mauve md:text-base">
+        {children}
+      </article>
+    </main>
+  )
+}
+
+export function ShippingReturnsPage() {
+  return (
+    <StaticArticle eyebrow="Policies" title="Shipping & returns">
+      <p>
+        We ship across India. Orders are packed with care and dispatched from our fulfilment partners. You will receive
+        tracking details by SMS and email once your order ships.
+      </p>
+      <h2 className="font-serif text-2xl text-moonberry-brown">Shipping</h2>
+      <ul className="list-inside list-disc space-y-2">
+        <li>Free standard shipping on orders above ₹999 (before discounts where applicable).</li>
+        <li>₹99 flat shipping for orders below ₹999.</li>
+        <li>Typical delivery: 2–7 business days depending on your PIN code.</li>
+      </ul>
+      <h2 className="font-serif text-2xl text-moonberry-brown">Returns</h2>
+      <p>
+        Unused products in original packaging may be returned within 7 days of delivery where eligible. Opened or used
+        items cannot be returned for hygiene reasons unless the product is defective.
+      </p>
+      <p>
+        For return requests, email{' '}
+        <a href="mailto:moonberry.bussness@gmail.com" className="text-moonberry-brown underline underline-offset-2">
+          moonberry.bussness@gmail.com
+        </a>{' '}
+        with your order number. Final return eligibility is confirmed at Shopify checkout and in your order
+        confirmation.
+      </p>
+    </StaticArticle>
+  )
+}
+
+export function PrivacyPolicyPage() {
+  return (
+    <StaticArticle eyebrow="Legal" title="Privacy policy">
+      <p>
+        Moonberry respects your privacy. This site uses your information only to operate the store, process orders, and
+        communicate about purchases and marketing where you have opted in.
+      </p>
+      <h2 className="font-serif text-2xl text-moonberry-brown">What we collect</h2>
+      <p>
+        When you browse, create an account, or check out, we may process data such as your name, email, phone, shipping
+        address, and order history. Payment details are handled securely by Shopify; we do not store your full card
+        details on this storefront.
+      </p>
+      <h2 className="font-serif text-2xl text-moonberry-brown">Cookies & analytics</h2>
+      <p>
+        We may use cookies and similar technologies needed for the cart, login session, and basic site performance. You
+        can control cookies through your browser settings.
+      </p>
+      <h2 className="font-serif text-2xl text-moonberry-brown">Contact</h2>
+      <p>
+        Questions about privacy? Reach us at{' '}
+        <a href="mailto:moonberry.bussness@gmail.com" className="text-moonberry-brown underline underline-offset-2">
+          moonberry.bussness@gmail.com
+        </a>
+        .
+      </p>
+    </StaticArticle>
+  )
+}
+
+export function IngredientsUsagePage() {
+  return (
+    <StaticArticle eyebrow="Care" title="Ingredients & usage">
+      <p>
+        Moonberry products are formulated for everyday wear and Indian climates. Always read the ingredient list on the
+        product packaging before use, especially if you have allergies or sensitive skin.
+      </p>
+      <h2 className="font-serif text-2xl text-moonberry-brown">How to use</h2>
+      <ul className="list-inside list-disc space-y-2">
+        <li>Skincare: apply to clean skin unless the label directs otherwise; follow with SPF in the daytime.</li>
+        <li>Makeup: patch test new shades on the jawline if you have reactive skin.</li>
+        <li>Fragrance: spray on pulse points; avoid rubbing wrists together vigorously.</li>
+      </ul>
+      <h2 className="font-serif text-2xl text-moonberry-brown">Storage</h2>
+      <p>Store products away from direct sunlight and excessive heat. Close lids tightly after each use.</p>
+      <p className="rounded-2xl border border-moonberry-rose/30 bg-white/70 p-4 text-sm">
+        Product-specific directions appear on each Shopify product page and on the physical label. When in doubt,
+        consult a dermatologist.
+      </p>
+    </StaticArticle>
+  )
+}
+
+export function TermsPage() {
+  return (
+    <StaticArticle eyebrow="Legal" title="Terms of use">
+      <p>
+        By using this website and purchasing from Moonberry, you agree to these terms. Product availability, prices,
+        and promotions may change without notice; the checkout page on Shopify shows the final price and terms for
+        your order.
+      </p>
+      <h2 className="font-serif text-2xl text-moonberry-brown">Orders</h2>
+      <p>
+        When you place an order, you offer to buy the items in your cart at the prices shown at checkout. We may
+        refuse or cancel orders in cases of pricing errors, suspected fraud, or stock issues.
+      </p>
+      <h2 className="font-serif text-2xl text-moonberry-brown">Content</h2>
+      <p>
+        Text, images, and branding on this site are owned by Moonberry or used with permission. You may not copy or
+        reuse site content for commercial purposes without written consent.
+      </p>
+      <h2 className="font-serif text-2xl text-moonberry-brown">Limitation</h2>
+      <p>
+        To the extent permitted by law, Moonberry is not liable for indirect or consequential damages arising from use
+        of this site or products. Some jurisdictions do not allow certain limitations; in those cases, our liability is
+        limited to the maximum permitted by law.
+      </p>
+    </StaticArticle>
+  )
+}
+
+export function FaqPage() {
   return (
     <main className="section-shell py-16">
       <SectionHeading
-        eyebrow="Checkout"
-        title="Secure Checkout Mock"
-        description="This flow is ready for Shopify checkout wiring."
+        eyebrow="Help"
+        title="Frequently asked questions"
+        description="Quick answers about orders, delivery, and shopping with Moonberry."
       />
-      <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
-        <section className="space-y-4 rounded-3xl bg-white/75 p-6">
-          {cartItems.length === 0 ? (
-            <p className="text-moonberry-mauve">Your cart is empty. Add products to continue.</p>
-          ) : (
-            cartItems.map((item) => (
-              <div key={item.id} className="flex gap-4 rounded-2xl border border-moonberry-rose/30 p-4">
-                <img src={item.image} alt={item.name} className="h-24 w-20 rounded-xl object-cover" />
-                <div className="flex-1">
-                  <h4 className="font-medium text-moonberry-brown">{item.name}</h4>
-                  <p className="mt-1 text-sm text-moonberry-mauve">{formatINR(item.price)}</p>
-                  <div className="mt-3 flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => onQtyChange(item.id, item.qty - 1)}
-                      className="h-8 w-8 rounded-full border border-moonberry-rose/40"
-                    >
-                      -
-                    </button>
-                    <span className="text-sm text-moonberry-mauve">Qty {item.qty}</span>
-                    <button
-                      type="button"
-                      onClick={() => onQtyChange(item.id, item.qty + 1)}
-                      className="h-8 w-8 rounded-full border border-moonberry-rose/40"
-                    >
-                      +
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => onRemove(item.id)}
-                      className="ml-auto text-sm text-moonberry-mauve underline"
-                    >
-                      Remove
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))
-          )}
-        </section>
-        <aside className="rounded-3xl bg-white/80 p-6">
-          <h3 className="font-serif text-3xl text-moonberry-brown">Order Summary</h3>
-          <div className="mt-5 space-y-3 text-sm">
-            <div className="flex items-center justify-between">
-              <span>Subtotal</span>
-              <span>{formatINR(subtotal)}</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span>Shipping</span>
-              <span>{shipping === 0 ? 'Free' : formatINR(shipping)}</span>
-            </div>
-            <div className="flex items-center justify-between border-t border-moonberry-rose/30 pt-3 text-base font-medium">
-              <span>Total</span>
-              <span>{formatINR(total)}</span>
-            </div>
-          </div>
-          <button
-            type="button"
-            disabled={cartItems.length === 0}
-            onClick={async () => {
-              setIsProcessing(true)
-              setCheckoutMessage('')
-              await new Promise((resolve) => setTimeout(resolve, 900))
-              setCheckoutMessage('Checkout initialized. Shopify payment redirect will plug in here.')
-              setIsProcessing(false)
-            }}
-            className="mt-6 w-full rounded-full bg-moonberry-brown px-6 py-3 text-sm uppercase tracking-[0.15em] text-white disabled:cursor-not-allowed disabled:opacity-60"
+      <div className="mx-auto max-w-3xl space-y-4">
+        {[
+          {
+            q: 'How do I pay?',
+            a: 'After you add items to your bag, go to checkout on this site, then continue to Shopify’s secure checkout to pay by card, UPI, or other methods your store supports.',
+          },
+          {
+            q: 'Do you ship all over India?',
+            a: 'We aim to serve pan-India. Delivery timelines and COD availability depend on your PIN code and are confirmed at checkout.',
+          },
+          {
+            q: 'How do I track my order?',
+            a: 'You will receive updates by email and SMS from Shopify once your order ships. Use the links in those messages for tracking.',
+          },
+          {
+            q: 'Can I return a product?',
+            a: 'See our Shipping & returns page for eligibility and how to request a return within the stated window.',
+          },
+        ].map((item) => (
+          <details
+            key={item.q}
+            className="group rounded-2xl border border-moonberry-rose/30 bg-white/75 p-5 open:bg-white/90"
           >
-            {isProcessing ? 'Processing...' : 'Continue to Payment (Mock)'}
-          </button>
-          {checkoutMessage ? (
-            <p className="mt-3 text-xs text-moonberry-mauve" aria-live="polite">
-              {checkoutMessage}
-            </p>
-          ) : (
-            <p className="mt-3 text-xs text-moonberry-mauve">
-              Next step: replace this action with Shopify checkout URL creation.
-            </p>
-          )}
-        </aside>
+            <summary className="cursor-pointer font-medium text-moonberry-brown">{item.q}</summary>
+            <p className="mt-3 text-sm text-moonberry-mauve">{item.a}</p>
+          </details>
+        ))}
+      </div>
+      <p className="mx-auto mt-10 max-w-3xl text-center text-sm text-moonberry-mauve">
+        Still need help?{' '}
+        <Link to="/contact" className="text-moonberry-brown underline underline-offset-2">
+          Contact us
+        </Link>
+        .
+      </p>
+    </main>
+  )
+}
+
+export function NotFoundPage() {
+  return (
+    <main className="section-shell py-24 text-center">
+      <p className="text-xs uppercase tracking-[0.28em] text-moonberry-mauve">404</p>
+      <h1 className="mt-3 font-serif text-5xl text-moonberry-brown">Page not found</h1>
+      <p className="mx-auto mt-4 max-w-md text-moonberry-mauve">
+        The link may be broken or the page may have moved. Try the shop or head back home.
+      </p>
+      <div className="mt-10 flex flex-wrap justify-center gap-3">
+        <Link
+          to="/"
+          className="rounded-full bg-moonberry-brown px-8 py-3 text-sm uppercase tracking-[0.12em] text-white"
+        >
+          Home
+        </Link>
+        <Link
+          to="/shop"
+          className="rounded-full border border-moonberry-rose/50 px-8 py-3 text-sm uppercase tracking-[0.12em] text-moonberry-brown"
+        >
+          Shop
+        </Link>
       </div>
     </main>
   )

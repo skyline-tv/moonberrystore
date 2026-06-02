@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
+import { Route, Routes, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { CheckCircle2, X } from 'lucide-react'
 import {
   CartDrawer,
@@ -12,23 +12,52 @@ import {
 import {
   addCartLine,
   createCart,
+  createCustomerAccessToken,
+  createCustomerAccount,
+  deleteCustomerAccessToken,
+  describeCheckoutHostnameMismatch,
   fetchCart,
+  fetchCustomer,
   getStorefrontCatalog,
   hasShopifyConfig,
   removeCartLine,
+  updateCartBuyerIdentity,
   updateCartLine,
 } from './lib/shopify'
 import {
   AboutPage,
   CheckoutPage,
+  CollectionDetailPage,
   CollectionsPage,
   ContactPage,
+  FaqPage,
   HomePage,
+  IngredientsUsagePage,
+  NotFoundPage,
+  PrivacyPolicyPage,
   ProductPage,
+  ShippingReturnsPage,
   ShopPage,
+  TermsPage,
 } from './pages/Pages'
+import {
+  AccountAddressesPage,
+  AccountLayout,
+  AccountOrdersPage,
+  AccountOverviewPage,
+  ForgotPasswordPage,
+  LoginPage,
+  SignupPage,
+} from './pages/AuthPages'
 
 const SHOPIFY_CART_STORAGE_KEY = 'moonberry.shopifyCartId'
+const SHOPIFY_CUSTOMER_TOKEN_KEY = 'moonberry.shopifyCustomerToken'
+
+function ProductRoute({ onQuickAdd, products }) {
+  const { slug } = useParams()
+  const match = products.find((p) => p.slug === slug)
+  return <ProductPage key={match?.id ?? slug} onQuickAdd={onQuickAdd} products={products} />
+}
 
 function ToastStack({ toasts, onDismiss }) {
   return (
@@ -66,8 +95,12 @@ function App() {
   const [catalogLoaded, setCatalogLoaded] = useState(false)
   const [catalogError, setCatalogError] = useState('')
   const [shopifyCartId, setShopifyCartId] = useState(null)
-  const [shopifyCheckoutUrl, setShopifyCheckoutUrl] = useState('')
+  const [checkoutUrl, setCheckoutUrl] = useState('')
   const [cartItems, setCartItems] = useState([])
+  const [customerToken, setCustomerToken] = useState(() =>
+    typeof window !== 'undefined' ? window.localStorage.getItem(SHOPIFY_CUSTOMER_TOKEN_KEY) : null,
+  )
+  const [customerProfile, setCustomerProfile] = useState(null)
 
   const dismissToast = useCallback((id) => {
     setToasts((prev) => prev.filter((toast) => toast.id !== id))
@@ -106,6 +139,38 @@ function App() {
     window.addEventListener('keydown', onEscape)
     return () => window.removeEventListener('keydown', onEscape)
   }, [])
+
+  const customerAccessToken = customerToken || undefined
+
+  const applyCartState = useCallback((cart) => {
+    if (!cart) return
+    setShopifyCartId(cart.id)
+    setCartItems(cart.items)
+    setCheckoutUrl(cart.checkoutUrl || '')
+  }, [])
+
+  useEffect(() => {
+    if (!hasShopifyConfig || !customerToken) return
+    let cancelled = false
+    ;(async () => {
+      try {
+        const profile = await fetchCustomer(customerToken)
+        if (cancelled) return
+        if (profile) {
+          setCustomerProfile(profile)
+        } else {
+          window.localStorage.removeItem(SHOPIFY_CUSTOMER_TOKEN_KEY)
+          setCustomerToken(null)
+          setCustomerProfile(null)
+        }
+      } catch {
+        /* Keep session on network errors; avoid wiping a valid token after login. */
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [customerToken])
 
   useEffect(() => {
     let cancelled = false
@@ -156,11 +221,9 @@ function App() {
       if (!storedCartId) return
 
       try {
-        const cart = await fetchCart(storedCartId)
+        const cart = await fetchCart(storedCartId, customerAccessToken)
         if (!cancelled && cart) {
-          setShopifyCartId(cart.id)
-          setShopifyCheckoutUrl(cart.checkoutUrl || '')
-          setCartItems(cart.items)
+          applyCartState(cart)
         }
       } catch {
         window.localStorage.removeItem(SHOPIFY_CART_STORAGE_KEY)
@@ -171,16 +234,14 @@ function App() {
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [customerAccessToken, applyCartState])
 
   const ensureShopifyCart = async () => {
     if (!hasShopifyConfig) return null
     if (shopifyCartId) return shopifyCartId
 
-    const newCart = await createCart()
-    setShopifyCartId(newCart.id)
-    setShopifyCheckoutUrl(newCart.checkoutUrl || '')
-    setCartItems(newCart.items)
+    const newCart = await createCart(customerAccessToken)
+    applyCartState(newCart)
     window.localStorage.setItem(SHOPIFY_CART_STORAGE_KEY, newCart.id)
     return newCart.id
   }
@@ -199,9 +260,8 @@ function App() {
     ;(async () => {
       try {
         const cartId = await ensureShopifyCart()
-        const updatedCart = await addCartLine(cartId, product.variantId, 1)
-        setCartItems(updatedCart.items)
-        setShopifyCheckoutUrl(updatedCart.checkoutUrl || '')
+        const updatedCart = await addCartLine(cartId, product.variantId, 1, customerAccessToken)
+        applyCartState(updatedCart)
         setCartOpen(true)
         showToast(`${product.name} added to bag`)
       } catch {
@@ -222,15 +282,22 @@ function App() {
     ;(async () => {
       try {
         if (nextQty <= 0) {
-          const updatedCart = await removeCartLine(shopifyCartId, currentItem.lineId)
-          setCartItems(updatedCart.items)
-          setShopifyCheckoutUrl(updatedCart.checkoutUrl || '')
+          const updatedCart = await removeCartLine(
+            shopifyCartId,
+            currentItem.lineId,
+            customerAccessToken,
+          )
+          applyCartState(updatedCart)
           showToast(`${currentItem.name} removed from bag`)
           return
         }
-        const updatedCart = await updateCartLine(shopifyCartId, currentItem.lineId, nextQty)
-        setCartItems(updatedCart.items)
-        setShopifyCheckoutUrl(updatedCart.checkoutUrl || '')
+        const updatedCart = await updateCartLine(
+          shopifyCartId,
+          currentItem.lineId,
+          nextQty,
+          customerAccessToken,
+        )
+        applyCartState(updatedCart)
       } catch {
         showToast('Could not update Shopify cart.')
       }
@@ -248,9 +315,12 @@ function App() {
 
     ;(async () => {
       try {
-        const updatedCart = await removeCartLine(shopifyCartId, currentItem.lineId)
-        setCartItems(updatedCart.items)
-        setShopifyCheckoutUrl(updatedCart.checkoutUrl || '')
+        const updatedCart = await removeCartLine(
+          shopifyCartId,
+          currentItem.lineId,
+          customerAccessToken,
+        )
+        applyCartState(updatedCart)
         showToast(`${currentItem.name} removed from bag`)
       } catch {
         showToast('Could not remove item from Shopify cart.')
@@ -269,11 +339,10 @@ function App() {
       try {
         let updatedCart = null
         for (const item of cartItems) {
-          updatedCart = await removeCartLine(shopifyCartId, item.lineId)
+          updatedCart = await removeCartLine(shopifyCartId, item.lineId, customerAccessToken)
         }
         if (updatedCart) {
-          setCartItems(updatedCart.items)
-          setShopifyCheckoutUrl(updatedCart.checkoutUrl || '')
+          applyCartState(updatedCart)
         }
         showToast('Cart cleared')
       } catch {
@@ -282,16 +351,146 @@ function App() {
     })()
   }
 
-  const productRouteFallback = useMemo(() => products[0]?.slug, [products])
+  const handleLogin = useCallback(
+    async ({ email, password }) => {
+      const token = await createCustomerAccessToken(email, password)
+      const profile = await fetchCustomer(token)
+      if (!profile) {
+        throw new Error(
+          'Could not load your account after sign-in. This often happens if the store uses New customer accounts instead of legacy email/password, or if the storefront token is missing customer scopes.',
+        )
+      }
+      window.localStorage.setItem(SHOPIFY_CUSTOMER_TOKEN_KEY, token)
+      setCustomerToken(token)
+      setCustomerProfile(profile)
+      if (shopifyCartId) {
+        try {
+          const cart = await updateCartBuyerIdentity(shopifyCartId, token)
+          applyCartState(cart)
+        } catch {
+          try {
+            const cart = await fetchCart(shopifyCartId, token)
+            if (cart) {
+              applyCartState(cart)
+            }
+          } catch {
+            /* keep existing cart UI */
+          }
+        }
+      }
+      showToast('Signed in')
+    },
+    [shopifyCartId, showToast, applyCartState],
+  )
+
+  const handleSignup = useCallback(
+    async ({ email, password, firstName, lastName }) => {
+      await createCustomerAccount({ email, password, firstName, lastName })
+      const token = await createCustomerAccessToken(email, password)
+      const profile = await fetchCustomer(token)
+      if (!profile) {
+        throw new Error(
+          'Account was created but your profile could not be loaded. Check customer account type (legacy email/password) and storefront API permissions.',
+        )
+      }
+      window.localStorage.setItem(SHOPIFY_CUSTOMER_TOKEN_KEY, token)
+      setCustomerToken(token)
+      setCustomerProfile(profile)
+      if (shopifyCartId) {
+        try {
+          const cart = await updateCartBuyerIdentity(shopifyCartId, token)
+          applyCartState(cart)
+        } catch {
+          try {
+            const cart = await fetchCart(shopifyCartId, token)
+            if (cart) {
+              applyCartState(cart)
+            }
+          } catch {
+            /* keep existing cart UI */
+          }
+        }
+      }
+      showToast('Account created')
+    },
+    [shopifyCartId, showToast, applyCartState],
+  )
+
+  const handleLogout = useCallback(async () => {
+    if (customerToken) {
+      try {
+        await deleteCustomerAccessToken(customerToken)
+      } catch {
+        /* clear local session anyway */
+      }
+    }
+    window.localStorage.removeItem(SHOPIFY_CUSTOMER_TOKEN_KEY)
+    setCustomerToken(null)
+    setCustomerProfile(null)
+    showToast('Signed out')
+    if (shopifyCartId) {
+      try {
+        const cart = await fetchCart(shopifyCartId)
+        if (cart) {
+          applyCartState(cart)
+        }
+      } catch {
+        /* ignore */
+      }
+    }
+  }, [customerToken, shopifyCartId, showToast, applyCartState])
+
+  const policyPaths = [
+    '/shipping-returns',
+    '/privacy',
+    '/ingredients',
+    '/terms',
+    '/faq',
+    '/about',
+    '/contact',
+  ]
+  const allowWithCatalogError =
+    ['/login', '/signup', '/checkout', '/forgot-password'].includes(location.pathname) ||
+    location.pathname.startsWith('/account') ||
+    location.pathname.startsWith('/collections/') ||
+    policyPaths.includes(location.pathname)
   const cartItemCount = cartItems.reduce((sum, item) => sum + item.qty, 0)
-  const handleCheckout = () => {
-    setCartOpen(false)
-    if (hasShopifyConfig && shopifyCheckoutUrl) {
-      showToast('Redirecting to Shopify checkout')
-      window.location.href = shopifyCheckoutUrl
+
+  const refreshCart = useCallback(async () => {
+    if (!shopifyCartId) return
+    if (!hasShopifyConfig) return
+    try {
+      const cart = await fetchCart(shopifyCartId, customerAccessToken)
+      if (cart) {
+        applyCartState(cart)
+      }
+    } catch {
+      /* ignore */
+    }
+  }, [shopifyCartId, customerAccessToken, applyCartState])
+
+  const checkoutHostnameWarning = useMemo(() => {
+    if (typeof window === 'undefined' || !checkoutUrl) return ''
+    return describeCheckoutHostnameMismatch(checkoutUrl, window.location.hostname)
+  }, [checkoutUrl])
+
+  const continueToShopifyCheckout = useCallback(() => {
+    if (!checkoutUrl) {
+      showToast('Checkout link is not ready. Try again in a moment.')
       return
     }
-    showToast('Redirecting to checkout mock')
+    if (typeof window !== 'undefined') {
+      const msg = describeCheckoutHostnameMismatch(checkoutUrl, window.location.hostname)
+      if (msg) {
+        showToast('Checkout is misconfigured: same domain as this site. See the red notice on this page.')
+        return
+      }
+    }
+    window.location.assign(checkoutUrl)
+  }, [checkoutUrl, showToast])
+
+  const handleCheckout = () => {
+    setCartOpen(false)
     navigate('/checkout')
   }
 
@@ -309,9 +508,16 @@ function App() {
         onOpenMobile={() => setMenuOpen(true)}
         onOpenSearch={() => setSearchOpen(true)}
         cartCount={cartItemCount}
+        loggedIn={Boolean(customerToken)}
+        onLogout={handleLogout}
       />
       <IndiaTrustBar />
-      <MobileMenu open={menuOpen} onClose={() => setMenuOpen(false)} />
+      <MobileMenu
+        open={menuOpen}
+        onClose={() => setMenuOpen(false)}
+        loggedIn={Boolean(customerToken)}
+        onLogout={handleLogout}
+      />
       <SearchModal
         open={searchOpen}
         onClose={() => setSearchOpen(false)}
@@ -336,12 +542,31 @@ function App() {
           <div className="section-shell py-20">
             <p className="text-center text-moonberry-mauve">Loading catalog...</p>
           </div>
-        ) : catalogError ? (
+        ) : catalogError && !allowWithCatalogError ? (
           <div className="section-shell py-20">
             <div className="mx-auto max-w-2xl rounded-3xl border border-moonberry-rose/30 bg-white/70 p-8 text-center">
               <p className="text-lg text-moonberry-brown">{catalogError}</p>
               <p className="mt-2 text-sm text-moonberry-mauve">
                 Set `VITE_SHOPIFY_STORE_DOMAIN` and `VITE_SHOPIFY_STOREFRONT_TOKEN` to continue.
+              </p>
+              <p className="mt-4 text-sm text-moonberry-mauve">
+                You can still{' '}
+                <button
+                  type="button"
+                  className="text-moonberry-brown underline underline-offset-2"
+                  onClick={() => navigate('/login')}
+                >
+                  log in
+                </button>{' '}
+                or{' '}
+                <button
+                  type="button"
+                  className="text-moonberry-brown underline underline-offset-2"
+                  onClick={() => navigate('/signup')}
+                >
+                  sign up
+                </button>
+                .
               </p>
             </div>
           </div>
@@ -353,32 +578,56 @@ function App() {
           />
           <Route path="/shop" element={<ShopPage onQuickAdd={addToCart} products={products} />} />
           <Route path="/collections" element={<CollectionsPage collections={collections} />} />
+          <Route
+            path="/collections/:slug"
+            element={<CollectionDetailPage onQuickAdd={addToCart} />}
+          />
           <Route path="/about" element={<AboutPage />} />
           <Route path="/contact" element={<ContactPage />} />
+          <Route path="/shipping-returns" element={<ShippingReturnsPage />} />
+          <Route path="/privacy" element={<PrivacyPolicyPage />} />
+          <Route path="/ingredients" element={<IngredientsUsagePage />} />
+          <Route path="/terms" element={<TermsPage />} />
+          <Route path="/faq" element={<FaqPage />} />
+          <Route path="/login" element={<LoginPage onLogin={handleLogin} />} />
+          <Route path="/signup" element={<SignupPage onSignup={handleSignup} />} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+          <Route
+            path="/account"
+            element={
+              <AccountLayout
+                customer={customerToken ? customerProfile : null}
+                sessionPending={Boolean(customerToken && !customerProfile)}
+                customerToken={customerToken}
+                onLogout={handleLogout}
+                catalogReady={catalogLoaded}
+              />
+            }
+          >
+            <Route index element={<AccountOverviewPage />} />
+            <Route path="orders" element={<AccountOrdersPage />} />
+            <Route path="addresses" element={<AccountAddressesPage />} />
+          </Route>
           <Route
             path="/product/:slug"
-            element={<ProductPage onQuickAdd={addToCart} products={products} />}
+            element={<ProductRoute onQuickAdd={addToCart} products={products} />}
           />
           <Route
             path="/checkout"
             element={
               <CheckoutPage
                 cartItems={cartItems}
+                checkoutUrl={checkoutUrl}
+                checkoutHostnameWarning={checkoutHostnameWarning}
                 onQtyChange={updateCartQty}
                 onRemove={removeFromCart}
+                onContinueToShopify={continueToShopifyCheckout}
+                onRefreshCart={refreshCart}
+                defaultEmail={customerProfile?.email || ''}
               />
             }
           />
-          <Route
-            path="*"
-            element={
-              productRouteFallback ? (
-                <Navigate to={`/product/${productRouteFallback}`} replace />
-              ) : (
-                <Navigate to="/" replace />
-              )
-            }
-          />
+          <Route path="*" element={<NotFoundPage />} />
         </Routes>
         )}
       </main>
