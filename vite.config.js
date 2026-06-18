@@ -2,6 +2,7 @@ import process from 'node:process'
 import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
+import { moonberryApiDevPlugin } from './lib-server/vite-api-plugin.js'
 
 function normalizeShopifyStoreDomain(raw) {
   if (!raw) return ''
@@ -18,7 +19,7 @@ export default defineConfig(({ mode }) => {
   const apiVersion = env.VITE_SHOPIFY_API_VERSION || '2025-01'
 
   return {
-    plugins: [react(), tailwindcss()],
+    plugins: [react(), tailwindcss(), moonberryApiDevPlugin()],
     server: {
       proxy: storeDomain
         ? {

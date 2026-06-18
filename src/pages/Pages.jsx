@@ -5,6 +5,7 @@ import { testimonials } from '../data/mockData'
 import { ProductCard, SectionHeading } from '../components/ProductCard'
 import { formatINR } from '../lib/currency'
 import { getCollectionByHandle, hasShopifyConfig, pickVariantForOption } from '../lib/shopify'
+import { hasRazorpayClientKey } from '../lib/razorpayCheckout'
 
 export function HomePage({ onQuickAdd, products = [], collections = [] }) {
   const bestSellers = products.filter((item) => item.bestSeller)
@@ -715,13 +716,47 @@ export function ContactPage() {
   )
 }
 
+const INDIAN_STATES = [
+  'Andhra Pradesh',
+  'Arunachal Pradesh',
+  'Assam',
+  'Bihar',
+  'Chhattisgarh',
+  'Delhi',
+  'Goa',
+  'Gujarat',
+  'Haryana',
+  'Himachal Pradesh',
+  'Jammu and Kashmir',
+  'Jharkhand',
+  'Karnataka',
+  'Kerala',
+  'Madhya Pradesh',
+  'Maharashtra',
+  'Manipur',
+  'Meghalaya',
+  'Mizoram',
+  'Nagaland',
+  'Odisha',
+  'Punjab',
+  'Rajasthan',
+  'Sikkim',
+  'Tamil Nadu',
+  'Telangana',
+  'Tripura',
+  'Uttar Pradesh',
+  'Uttarakhand',
+  'West Bengal',
+]
+
+const checkoutInputClass =
+  'h-12 w-full rounded-2xl border border-moonberry-rose/40 bg-white px-4 text-moonberry-brown outline-none focus:border-moonberry-brown/50'
+
 export function CheckoutPage({
   cartItems = [],
-  checkoutUrl = '',
-  checkoutHostnameWarning = '',
   onQtyChange,
   onRemove,
-  onContinueToShopify,
+  onCompleteOrder,
   onRefreshCart,
   defaultEmail = '',
 }) {
@@ -729,35 +764,111 @@ export function CheckoutPage({
   const subtotal = cartItems.reduce((sum, item) => sum + item.price * item.qty, 0)
   const shipping = subtotal === 0 || subtotal >= freeShippingThreshold ? 0 : 99
   const gst = Math.round(subtotal * 0.18)
-  const total = subtotal + shipping
+  const total = subtotal + shipping + gst
+
+  const [phase, setPhase] = useState('checkout')
+  const [orderNumber, setOrderNumber] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
+
+  const [email, setEmail] = useState(() => defaultEmail || '')
+  const [phone, setPhone] = useState('')
+  const [fullName, setFullName] = useState('')
+  const [addressLine1, setAddressLine1] = useState('')
+  const [addressLine2, setAddressLine2] = useState('')
+  const [city, setCity] = useState('')
+  const [state, setState] = useState('Maharashtra')
+  const [pincode, setPincode] = useState('')
+  const [paymentMethod, setPaymentMethod] = useState('cod')
 
   useEffect(() => {
     onRefreshCart?.()
   }, [onRefreshCart])
 
+  const validateForm = () => {
+    if (!email.includes('@')) return 'Enter a valid email address.'
+    if (phone.replace(/\D/g, '').length < 10) return 'Enter a valid 10-digit mobile number.'
+    if (fullName.trim().length < 2) return 'Enter the recipient name.'
+    if (addressLine1.trim().length < 5) return 'Enter your delivery address.'
+    if (city.trim().length < 2) return 'Enter your city.'
+    if (!/^\d{6}$/.test(pincode.trim())) return 'Enter a valid 6-digit PIN code.'
+    if ((paymentMethod === 'upi' || paymentMethod === 'card') && !hasRazorpayClientKey) {
+      return 'Online payment is not configured yet. Choose cash on delivery.'
+    }
+    return ''
+  }
+
+  const handlePlaceOrder = async (event) => {
+    event.preventDefault()
+    setError('')
+    const validationError = validateForm()
+    if (validationError) {
+      setError(validationError)
+      return
+    }
+
+    setBusy(true)
+    try {
+      const result = await onCompleteOrder?.({
+        email: email.trim(),
+        phone: phone.trim(),
+        fullName: fullName.trim(),
+        addressLine1: addressLine1.trim(),
+        addressLine2: addressLine2.trim(),
+        city: city.trim(),
+        state,
+        pincode: pincode.trim(),
+        paymentMethod,
+        total,
+      })
+      setOrderNumber(result?.orderNumber || '')
+      setPhase('complete')
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+    } catch (err) {
+      setError(err?.message || 'Could not place your order. Try again.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  if (phase === 'complete') {
+    return (
+      <main className="section-shell py-16 md:py-20">
+        <div className="mx-auto max-w-xl rounded-3xl bg-white/85 p-10 text-center shadow-[0_12px_40px_rgba(74,59,61,0.08)] md:p-12">
+          <CheckCircle2 className="mx-auto text-green-700" size={48} aria-hidden />
+          <h1 className="mt-6 font-serif text-3xl text-moonberry-brown">Thank you for your order</h1>
+          <p className="mt-3 text-moonberry-mauve">
+            Your order <span className="font-medium text-moonberry-brown">{orderNumber}</span> is confirmed.
+            We will email updates to {email}.
+          </p>
+          <p className="mt-2 text-sm text-moonberry-mauve">
+            {paymentMethod === 'cod'
+              ? 'Pay when your package arrives.'
+              : 'Payment received. Our team will prepare your shipment shortly.'}
+          </p>
+          <Link
+            to="/shop"
+            className="mt-8 inline-flex rounded-full bg-moonberry-brown px-7 py-3 text-sm uppercase tracking-[0.15em] text-white"
+          >
+            Continue shopping
+          </Link>
+        </div>
+      </main>
+    )
+  }
+
   return (
     <main className="section-shell py-12 md:py-16">
       <SectionHeading
         eyebrow="Checkout"
-        title="Review your bag"
-        description="Shipping, tax, and payment are completed securely on Shopify — the same catalog as this site."
+        title="Complete your order"
+        description="Contact, delivery, and payment — all on Moonberry. No redirects."
       />
 
       {defaultEmail ? (
         <p className="mb-6 text-sm text-moonberry-mauve">
-          Signed in as <span className="text-moonberry-brown">{defaultEmail}</span>. Your cart is synced with your
-          session.
+          Signed in as <span className="text-moonberry-brown">{defaultEmail}</span>.
         </p>
-      ) : null}
-
-      {checkoutHostnameWarning ? (
-        <div
-          className="mb-8 rounded-2xl border border-red-300/80 bg-red-50/95 p-5 text-sm text-red-950"
-          role="alert"
-        >
-          <p className="font-medium text-red-950">Checkout cannot open on this site address</p>
-          <p className="mt-2 leading-relaxed">{checkoutHostnameWarning}</p>
-        </div>
       ) : null}
 
       {cartItems.length === 0 ? (
@@ -771,7 +882,7 @@ export function CheckoutPage({
           </Link>
         </div>
       ) : (
-        <div className="grid gap-8 lg:grid-cols-[1.15fr_0.85fr] lg:items-start">
+        <form onSubmit={handlePlaceOrder} className="grid gap-8 lg:grid-cols-[1.15fr_0.85fr] lg:items-start">
           <div className="space-y-6">
             <section className="rounded-3xl bg-white/75 p-6 md:p-8">
               <h2 className="font-serif text-xl text-moonberry-brown">Items in your bag</h2>
@@ -818,15 +929,159 @@ export function CheckoutPage({
               </div>
             </section>
 
-            <div className="rounded-3xl border border-moonberry-rose/25 bg-moonberry-cream/40 p-6 text-sm text-moonberry-brown">
-              <p className="flex gap-2">
-                <CheckCircle2 className="mt-0.5 shrink-0 text-green-700" size={18} aria-hidden />
-                <span>
-                  Estimated totals below include common India shipping and GST assumptions.{' '}
-                  <strong className="font-medium">Final amounts</strong> are confirmed on Shopify checkout.
-                </span>
-              </p>
-            </div>
+            <section className="rounded-3xl bg-white/75 p-6 md:p-8">
+              <h2 className="font-serif text-xl text-moonberry-brown">Contact</h2>
+              <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                <div className="sm:col-span-2">
+                  <label className="mb-1 block text-xs uppercase tracking-[0.14em] text-moonberry-mauve">Email</label>
+                  <input
+                    type="email"
+                    autoComplete="email"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className={checkoutInputClass}
+                  />
+                </div>
+                <div className="sm:col-span-2">
+                  <label className="mb-1 block text-xs uppercase tracking-[0.14em] text-moonberry-mauve">Mobile</label>
+                  <input
+                    type="tel"
+                    autoComplete="tel"
+                    required
+                    placeholder="10-digit number"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    className={checkoutInputClass}
+                  />
+                </div>
+              </div>
+            </section>
+
+            <section className="rounded-3xl bg-white/75 p-6 md:p-8">
+              <h2 className="font-serif text-xl text-moonberry-brown">Delivery address</h2>
+              <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                <div className="sm:col-span-2">
+                  <label className="mb-1 block text-xs uppercase tracking-[0.14em] text-moonberry-mauve">
+                    Full name
+                  </label>
+                  <input
+                    type="text"
+                    autoComplete="name"
+                    required
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    className={checkoutInputClass}
+                  />
+                </div>
+                <div className="sm:col-span-2">
+                  <label className="mb-1 block text-xs uppercase tracking-[0.14em] text-moonberry-mauve">
+                    Address line 1
+                  </label>
+                  <input
+                    type="text"
+                    autoComplete="address-line1"
+                    required
+                    value={addressLine1}
+                    onChange={(e) => setAddressLine1(e.target.value)}
+                    className={checkoutInputClass}
+                  />
+                </div>
+                <div className="sm:col-span-2">
+                  <label className="mb-1 block text-xs uppercase tracking-[0.14em] text-moonberry-mauve">
+                    Address line 2 (optional)
+                  </label>
+                  <input
+                    type="text"
+                    autoComplete="address-line2"
+                    value={addressLine2}
+                    onChange={(e) => setAddressLine2(e.target.value)}
+                    className={checkoutInputClass}
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs uppercase tracking-[0.14em] text-moonberry-mauve">City</label>
+                  <input
+                    type="text"
+                    autoComplete="address-level2"
+                    required
+                    value={city}
+                    onChange={(e) => setCity(e.target.value)}
+                    className={checkoutInputClass}
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs uppercase tracking-[0.14em] text-moonberry-mauve">State</label>
+                  <select
+                    required
+                    value={state}
+                    onChange={(e) => setState(e.target.value)}
+                    className={checkoutInputClass}
+                  >
+                    {INDIAN_STATES.map((name) => (
+                      <option key={name} value={name}>
+                        {name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs uppercase tracking-[0.14em] text-moonberry-mauve">PIN code</label>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    autoComplete="postal-code"
+                    required
+                    maxLength={6}
+                    value={pincode}
+                    onChange={(e) => setPincode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                    className={checkoutInputClass}
+                  />
+                </div>
+              </div>
+            </section>
+
+            <section className="rounded-3xl bg-white/75 p-6 md:p-8">
+              <h2 className="font-serif text-xl text-moonberry-brown">Payment</h2>
+              <div className="mt-4 flex flex-wrap gap-2">
+                {[
+                  { id: 'cod', label: 'Cash on delivery', enabled: true },
+                  { id: 'upi', label: 'UPI', enabled: hasRazorpayClientKey },
+                  { id: 'card', label: 'Card', enabled: hasRazorpayClientKey },
+                ].map((option) => (
+                  <button
+                    key={option.id}
+                    type="button"
+                    disabled={!option.enabled}
+                    onClick={() => setPaymentMethod(option.id)}
+                    className={`rounded-full border px-4 py-2 text-sm transition disabled:cursor-not-allowed disabled:opacity-45 ${
+                      paymentMethod === option.id
+                        ? 'border-moonberry-brown bg-moonberry-brown text-white'
+                        : 'border-moonberry-rose/40 text-moonberry-brown hover:bg-moonberry-cream/60'
+                    }`}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+
+              {paymentMethod === 'cod' ? (
+                <p className="mt-4 text-sm text-moonberry-mauve">
+                  Pay in cash when your order is delivered. Your order is created in Shopify immediately.
+                </p>
+              ) : (
+                <p className="mt-4 text-sm text-moonberry-mauve">
+                  After you place the order, a secure Razorpay window opens on this page for UPI or card payment.
+                  No redirect to Shopify.
+                </p>
+              )}
+
+              {!hasRazorpayClientKey ? (
+                <p className="mt-3 text-xs text-moonberry-mauve">
+                  UPI and card require `VITE_RAZORPAY_KEY_ID` and server Razorpay secrets. COD works without them.
+                </p>
+              ) : null}
+            </section>
           </div>
 
           <aside className="lg:sticky lg:top-28">
@@ -843,39 +1098,31 @@ export function CheckoutPage({
                   <span>{shipping === 0 ? 'Free' : formatINR(shipping)}</span>
                 </div>
                 <div className="flex justify-between text-moonberry-mauve">
-                  <span>Est. GST (18%)</span>
+                  <span>GST (18%)</span>
                   <span>{formatINR(gst)}</span>
                 </div>
                 <div className="flex justify-between pt-2 text-base font-semibold text-moonberry-brown">
-                  <span>Estimated total</span>
+                  <span>Total</span>
                   <span>{formatINR(total)}</span>
                 </div>
               </div>
 
-              <button
-                type="button"
-                onClick={() => onContinueToShopify?.()}
-                disabled={Boolean(checkoutHostnameWarning)}
-                className="mt-6 w-full rounded-full bg-moonberry-brown px-6 py-3.5 text-sm uppercase tracking-[0.15em] text-white transition hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                Continue to secure checkout
-              </button>
-
-              {!checkoutUrl ? (
-                <div className="mt-4 rounded-2xl border border-amber-200/80 bg-amber-50/80 p-3 text-xs text-amber-950">
-                  <p>Checkout link not ready. Try refreshing your cart.</p>
-                  <button
-                    type="button"
-                    className="mt-2 text-moonberry-brown underline underline-offset-2"
-                    onClick={() => onRefreshCart?.()}
-                  >
-                    Refresh cart
-                  </button>
-                </div>
+              {error ? (
+                <p className="mt-4 text-sm text-red-600" role="alert" aria-live="polite">
+                  {error}
+                </p>
               ) : null}
 
+              <button
+                type="submit"
+                disabled={busy}
+                className="mt-6 w-full rounded-full bg-moonberry-brown px-6 py-3.5 text-sm uppercase tracking-[0.15em] text-white transition hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {busy ? 'Placing order…' : 'Place order'}
+              </button>
+
               <p className="mt-4 text-center text-[11px] leading-relaxed text-moonberry-mauve">
-                You will leave this site to enter Shopify Checkout. Payment and delivery details are collected there.
+                Orders are created in Shopify from this form. UPI and card payments use Razorpay on this site.
               </p>
 
               <Link
@@ -886,7 +1133,7 @@ export function CheckoutPage({
               </Link>
             </div>
           </aside>
-        </div>
+        </form>
       )}
     </main>
   )

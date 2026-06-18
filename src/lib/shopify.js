@@ -423,11 +423,27 @@ function mapCartLine(lineNode) {
   }
 }
 
+/** Shopify headless carts must tag checkout so buyers land on Checkout, not the Online Store theme. */
+const HEADLESS_CHECKOUT_CHANNEL = 'headless-storefronts'
+
+export function normalizeHeadlessCheckoutUrl(checkoutUrl) {
+  if (!checkoutUrl) return ''
+  try {
+    const url = new URL(checkoutUrl)
+    if (!url.searchParams.has('channel')) {
+      url.searchParams.set('channel', HEADLESS_CHECKOUT_CHANNEL)
+    }
+    return url.toString()
+  } catch {
+    return checkoutUrl
+  }
+}
+
 function mapCart(cart) {
   if (!cart) return null
   return {
     id: cart.id,
-    checkoutUrl: cart.checkoutUrl,
+    checkoutUrl: normalizeHeadlessCheckoutUrl(cart.checkoutUrl),
     items: cart.lines.edges.map((edge) => mapCartLine(edge.node)),
     subtotal: Math.round(parseAmount(cart.cost.subtotalAmount.amount)),
     total: Math.round(parseAmount(cart.cost.totalAmount.amount)),

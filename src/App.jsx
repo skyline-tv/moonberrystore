@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Route, Routes, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { CheckCircle2, X } from 'lucide-react'
 import {
@@ -15,7 +15,6 @@ import {
   createCustomerAccessToken,
   createCustomerAccount,
   deleteCustomerAccessToken,
-  describeCheckoutHostnameMismatch,
   fetchCart,
   fetchCustomer,
   getStorefrontCatalog,
@@ -24,6 +23,8 @@ import {
   updateCartBuyerIdentity,
   updateCartLine,
 } from './lib/shopify'
+import { createCheckoutOrder, verifyCheckoutPayment } from './lib/checkoutApi'
+import { openRazorpayCheckout } from './lib/razorpayCheckout'
 import {
   AboutPage,
   CheckoutPage,
@@ -95,7 +96,6 @@ function App() {
   const [catalogLoaded, setCatalogLoaded] = useState(false)
   const [catalogError, setCatalogError] = useState('')
   const [shopifyCartId, setShopifyCartId] = useState(null)
-  const [checkoutUrl, setCheckoutUrl] = useState('')
   const [cartItems, setCartItems] = useState([])
   const [customerToken, setCustomerToken] = useState(() =>
     typeof window !== 'undefined' ? window.localStorage.getItem(SHOPIFY_CUSTOMER_TOKEN_KEY) : null,
@@ -146,7 +146,13 @@ function App() {
     if (!cart) return
     setShopifyCartId(cart.id)
     setCartItems(cart.items)
-    setCheckoutUrl(cart.checkoutUrl || '')
+    window.localStorage.setItem(SHOPIFY_CART_STORAGE_KEY, cart.id)
+  }, [])
+
+  const clearCartState = useCallback(() => {
+    window.localStorage.removeItem(SHOPIFY_CART_STORAGE_KEY)
+    setShopifyCartId(null)
+    setCartItems([])
   }, [])
 
   useEffect(() => {
@@ -222,11 +228,14 @@ function App() {
 
       try {
         const cart = await fetchCart(storedCartId, customerAccessToken)
-        if (!cancelled && cart) {
+        if (cancelled) return
+        if (cart) {
           applyCartState(cart)
+        } else {
+          clearCartState()
         }
       } catch {
-        window.localStorage.removeItem(SHOPIFY_CART_STORAGE_KEY)
+        clearCartState()
       }
     }
 
@@ -234,7 +243,7 @@ function App() {
     return () => {
       cancelled = true
     }
-  }, [customerAccessToken, applyCartState])
+  }, [customerAccessToken, applyCartState, clearCartState])
 
   const ensureShopifyCart = async () => {
     if (!hasShopifyConfig) return null
@@ -242,7 +251,6 @@ function App() {
 
     const newCart = await createCart(customerAccessToken)
     applyCartState(newCart)
-    window.localStorage.setItem(SHOPIFY_CART_STORAGE_KEY, newCart.id)
     return newCart.id
   }
 
@@ -463,31 +471,97 @@ function App() {
       const cart = await fetchCart(shopifyCartId, customerAccessToken)
       if (cart) {
         applyCartState(cart)
+      } else {
+        clearCartState()
       }
     } catch {
       /* ignore */
     }
-  }, [shopifyCartId, customerAccessToken, applyCartState])
+  }, [shopifyCartId, customerAccessToken, applyCartState, clearCartState])
 
-  const checkoutHostnameWarning = useMemo(() => {
-    if (typeof window === 'undefined' || !checkoutUrl) return ''
-    return describeCheckoutHostnameMismatch(checkoutUrl, window.location.hostname)
-  }, [checkoutUrl])
-
-  const continueToShopifyCheckout = useCallback(() => {
-    if (!checkoutUrl) {
-      showToast('Checkout link is not ready. Try again in a moment.')
+  const clearShopifyCartLines = useCallback(async () => {
+    if (!shopifyCartId) return
+    const cart = await fetchCart(shopifyCartId, customerAccessToken)
+    if (!cart?.items?.length) {
+      clearCartState()
       return
     }
-    if (typeof window !== 'undefined') {
-      const msg = describeCheckoutHostnameMismatch(checkoutUrl, window.location.hostname)
-      if (msg) {
-        showToast('Checkout is misconfigured: same domain as this site. See the red notice on this page.')
-        return
-      }
+    for (const item of cart.items) {
+      await removeCartLine(shopifyCartId, item.lineId, customerAccessToken)
     }
-    window.location.assign(checkoutUrl)
-  }, [checkoutUrl, showToast])
+    clearCartState()
+  }, [shopifyCartId, customerAccessToken, clearCartState])
+
+  const handleCompleteOrder = useCallback(
+    async (orderDetails) => {
+      if (!hasShopifyConfig) {
+        throw new Error('Shopify is not configured yet.')
+      }
+      if (!shopifyCartId || cartItems.length === 0) {
+        throw new Error('Your bag is empty.')
+      }
+
+      const customer = {
+        email: orderDetails.email,
+        phone: orderDetails.phone,
+        fullName: orderDetails.fullName,
+        addressLine1: orderDetails.addressLine1,
+        addressLine2: orderDetails.addressLine2,
+        city: orderDetails.city,
+        state: orderDetails.state,
+        pincode: orderDetails.pincode,
+      }
+
+      let createResult
+      try {
+        createResult = await createCheckoutOrder({
+          cartId: shopifyCartId,
+          customerAccessToken,
+          customer,
+          paymentMethod: orderDetails.paymentMethod,
+        })
+      } catch (error) {
+        if (error instanceof Error) throw error
+        throw new Error('Could not start checkout.', { cause: error })
+      }
+
+      let orderNumber = createResult.orderNumber
+      let shopifyOrderId = createResult.shopifyOrderId
+
+      if (createResult.status === 'payment_required') {
+        const payment = await openRazorpayCheckout(createResult.razorpay)
+        const verified = await verifyCheckoutPayment({
+          draftOrderId: createResult.draftOrderId,
+          razorpayOrderId: payment.razorpayOrderId,
+          razorpayPaymentId: payment.razorpayPaymentId,
+          razorpaySignature: payment.razorpaySignature,
+        })
+        orderNumber = verified.orderNumber
+        shopifyOrderId = verified.shopifyOrderId
+      }
+
+      try {
+        await clearShopifyCartLines()
+      } catch (error) {
+        console.warn('Order placed but cart could not be cleared.', error)
+      }
+
+      showToast('Order placed successfully!')
+      return {
+        orderNumber,
+        shopifyOrderId,
+        total: createResult.total ?? orderDetails.total,
+        paymentMethod: orderDetails.paymentMethod,
+      }
+    },
+    [
+      shopifyCartId,
+      cartItems.length,
+      customerAccessToken,
+      clearShopifyCartLines,
+      showToast,
+    ],
+  )
 
   const handleCheckout = () => {
     setCartOpen(false)
@@ -617,11 +691,9 @@ function App() {
             element={
               <CheckoutPage
                 cartItems={cartItems}
-                checkoutUrl={checkoutUrl}
-                checkoutHostnameWarning={checkoutHostnameWarning}
                 onQtyChange={updateCartQty}
                 onRemove={removeFromCart}
-                onContinueToShopify={continueToShopifyCheckout}
+                onCompleteOrder={handleCompleteOrder}
                 onRefreshCart={refreshCart}
                 defaultEmail={customerProfile?.email || ''}
               />

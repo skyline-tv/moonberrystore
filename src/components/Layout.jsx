@@ -471,7 +471,7 @@ export function CartDrawer({
             Clear Cart
           </button>
           <p className="mt-3 text-center text-xs text-moonberry-mauve">
-            Next step: review on the checkout page, then pay securely on Shopify.
+            Review your bag and complete payment on the checkout page — all on Moonberry.
           </p>
         </div>
       </aside>
