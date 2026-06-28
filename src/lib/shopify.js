@@ -25,7 +25,7 @@ function storefrontGraphqlEndpoint() {
 
 export async function shopifyRequest(query, variables = {}, options = {}) {
   if (!hasShopifyConfig) {
-    throw new Error('Shopify env vars are missing. Falling back to mock data.')
+    throw new Error('Shopify is not configured.')
   }
 
   const endpoint = storefrontGraphqlEndpoint()
@@ -399,9 +399,7 @@ function mapCollection(node) {
     slug: node.handle,
     name: node.title,
     description: node.description || 'Curated selection from the Moonberry catalog.',
-    image:
-      node.image?.url ||
-      'https://images.unsplash.com/photo-1594035910387-fea47794261f?auto=format&fit=crop&w=1400&q=80',
+    image: node.image?.url || null,
   }
 }
 

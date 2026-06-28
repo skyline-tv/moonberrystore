@@ -1,6 +1,19 @@
 import { useEffect, useState } from 'react'
 import { Link, NavLink } from 'react-router-dom'
-import { Menu, Minus, Plus, Search, ShoppingBag, Trash2, X } from 'lucide-react'
+import {
+  CreditCard,
+  Menu,
+  Minus,
+  Package,
+  Plus,
+  RotateCcw,
+  Search,
+  ShoppingBag,
+  Trash2,
+  Truck,
+  X,
+} from 'lucide-react'
+import { BrandMark } from './BrandMark'
 import { formatINR } from '../lib/currency'
 import { calculateOrderTotals } from '../lib/pricing'
 import { CONTACT_EMAIL } from '../lib/site'
@@ -23,7 +36,6 @@ export function Navbar({
   onLogout,
 }) {
   const [scrolled, setScrolled] = useState(false)
-  const [logoMissing, setLogoMissing] = useState(false)
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20)
@@ -42,14 +54,14 @@ export function Navbar({
         <div
           className={`relative flex items-center justify-between rounded-2xl border px-4 py-3 md:px-6 ${
             scrolled
-              ? 'glass border-white/70 shadow-[0_8px_30px_rgba(74,59,61,0.12)]'
-              : 'border-transparent bg-white/35 backdrop-blur-sm'
+              ? 'glass border-white/70 shadow-[0_10px_40px_rgba(74,59,61,0.1)]'
+              : 'border-white/30 bg-white/40 backdrop-blur-md'
           } transition-all duration-500`}
         >
           <div className="flex min-w-[42px] items-center md:min-w-0 md:flex-1">
             <button
               type="button"
-              className="inline-flex rounded-full border border-white/60 bg-white/60 p-2 text-moonberry-brown md:hidden"
+              className="inline-flex rounded-full border border-white/60 bg-white/70 p-2.5 text-moonberry-brown shadow-sm transition hover:bg-white md:hidden"
               onClick={onOpenMobile}
               aria-label="Open mobile menu"
             >
@@ -57,37 +69,12 @@ export function Navbar({
             </button>
 
             <Link to="/" className="hidden text-moonberry-brown md:block">
-              {!logoMissing ? (
-                <div className="flex items-center gap-3">
-                  <img
-                    src="/moonberry-logo.png"
-                    alt="Moonberry icon"
-                    className="h-11 w-auto object-contain"
-                    onError={() => setLogoMissing(true)}
-                  />
-                </div>
-              ) : (
-                <span className="sr-only">Moonberry</span>
-              )}
+              <BrandMark size="md" />
             </Link>
           </div>
 
-          <Link
-            to="/"
-            className="absolute left-1/2 -translate-x-1/2 text-moonberry-brown md:hidden"
-          >
-            {!logoMissing ? (
-              <div className="flex items-center gap-2">
-                <img
-                  src="/logo.png"
-                  alt="Moonberry icon"
-                  className="h-9 w-auto object-contain"
-                  onError={() => setLogoMissing(true)}
-                />
-              </div>
-            ) : (
-              <span className="sr-only">Moonberry</span>
-            )}
+          <Link to="/" className="absolute left-1/2 -translate-x-1/2 text-moonberry-brown md:hidden">
+            <BrandMark size="sm" />
           </Link>
 
           <nav className="hidden items-center justify-center gap-7 md:absolute md:left-1/2 md:flex md:-translate-x-1/2">
@@ -150,7 +137,7 @@ export function Navbar({
             </div>
             <button
               type="button"
-              className="rounded-full border border-white/60 bg-white/65 p-2.5 text-moonberry-brown transition hover:bg-white"
+              className="rounded-full border border-white/60 bg-white/70 p-2.5 text-moonberry-brown shadow-sm transition hover:bg-white"
               onClick={onOpenSearch}
               aria-label="Search"
             >
@@ -158,7 +145,7 @@ export function Navbar({
             </button>
             <button
               type="button"
-              className="relative rounded-full border border-white/60 bg-white/65 p-2.5 text-moonberry-brown transition hover:bg-white"
+              className="relative rounded-full border border-white/60 bg-white/70 p-2.5 text-moonberry-brown shadow-sm transition hover:bg-white"
               onClick={onOpenCart}
               aria-label="Open cart"
             >
@@ -177,14 +164,25 @@ export function Navbar({
 }
 
 export function IndiaTrustBar() {
-  const trustItems = ['UPI & Cards', 'COD Available', 'Free Shipping above Rs. 999', 'Easy 7-day Returns']
+  const trustItems = [
+    { icon: CreditCard, label: 'UPI & Cards' },
+    { icon: Package, label: 'COD Available' },
+    { icon: Truck, label: 'Free Shipping above Rs. 999' },
+    { icon: RotateCcw, label: 'Easy 7-day Returns' },
+  ]
 
   return (
-    <div className="section-shell mt-3">
-      <div className="rounded-2xl border border-moonberry-rose/25 bg-white/70 px-4 py-2">
-        <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-1 text-[11px] uppercase tracking-[0.14em] text-moonberry-mauve">
-          {trustItems.map((item) => (
-            <span key={item}>{item}</span>
+    <div className="section-shell mt-2 md:mt-3">
+      <div className="overflow-hidden rounded-2xl border border-moonberry-rose/20 bg-white/65 shadow-[0_4px_20px_rgba(74,59,61,0.05)] backdrop-blur-sm">
+        <div className="flex flex-wrap items-center justify-center gap-x-1 gap-y-2 px-4 py-2.5">
+          {trustItems.map((item, index) => (
+            <span key={item.label} className="inline-flex items-center">
+              {index > 0 ? <span className="divider-dot" aria-hidden /> : null}
+              <span className="inline-flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-[0.14em] text-moonberry-mauve sm:text-[11px]">
+                <item.icon size={13} className="shrink-0 text-moonberry-rose/80" aria-hidden />
+                {item.label}
+              </span>
+            </span>
           ))}
         </div>
       </div>
@@ -202,12 +200,12 @@ export function MobileMenu({ open, onClose, loggedIn = false, onLogout }) {
         onClick={onClose}
       />
       <aside
-        className={`absolute left-0 top-0 h-full w-80 border-r border-moonberry-rose/30 bg-moonberry-cream p-6 transition-transform duration-300 ${
+        className={`absolute left-0 top-0 flex h-full w-[min(100vw,20rem)] flex-col border-r border-moonberry-rose/20 bg-[#faf6f5]/98 p-6 shadow-[8px_0_40px_rgba(74,59,61,0.08)] backdrop-blur-xl transition-transform duration-300 ${
           open ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
         <div className="mb-10 flex items-center justify-between">
-          <img src="/moonberry-logo.png" alt="Moonberry" className="h-14 w-auto object-contain" />
+          <BrandMark size="lg" />
           <button
             type="button"
             onClick={onClose}
@@ -223,8 +221,8 @@ export function MobileMenu({ open, onClose, loggedIn = false, onLogout }) {
               key={link.to}
               to={link.to}
               className={({ isActive }) =>
-                `rounded-xl px-3 py-2 text-lg ${
-                  isActive ? 'bg-white/75 text-moonberry-brown' : 'text-moonberry-brown/90'
+                `rounded-xl px-4 py-3 font-serif text-xl transition ${
+                  isActive ? 'bg-white text-moonberry-brown shadow-sm' : 'text-moonberry-brown/85 hover:bg-white/60'
                 }`
               }
               onClick={onClose}
@@ -309,15 +307,15 @@ export function SearchModal({
       <div
         className={`section-shell absolute inset-x-0 top-24 transition duration-300 ${open ? 'translate-y-0 opacity-100' : '-translate-y-2 opacity-0'}`}
       >
-        <div className="mx-auto w-full max-w-3xl rounded-3xl border border-moonberry-rose/30 bg-white p-5 shadow-xl">
-          <div className="flex items-center gap-3 rounded-2xl border border-moonberry-rose/30 px-4">
+        <div className="mx-auto w-full max-w-3xl rounded-4xl border border-moonberry-rose/20 bg-white/95 p-6 shadow-[0_20px_60px_rgba(74,59,61,0.12)] backdrop-blur-xl">
+          <div className="flex items-center gap-3 rounded-2xl border border-moonberry-rose/25 bg-moonberry-cream/30 px-4">
             <Search size={18} className="text-moonberry-mauve" />
             <input
               autoFocus
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               placeholder="Search perfumes, skincare, makeup..."
-              className="h-12 w-full outline-none"
+              className="input-field h-12 border-0 bg-transparent shadow-none focus:border-0 focus:shadow-none"
             />
             <button type="button" onClick={handleClose} aria-label="Close search">
               <X size={18} />
@@ -333,11 +331,11 @@ export function SearchModal({
                     setQuery('')
                     onSelectProduct(product.slug)
                   }}
-                  className="flex w-full items-center gap-3 rounded-xl border border-moonberry-rose/25 p-3 text-left transition hover:bg-moonberry-cream"
+                  className="flex w-full items-center gap-4 rounded-2xl border border-moonberry-rose/20 bg-white/80 p-3 text-left transition hover:border-moonberry-rose/35 hover:shadow-sm"
                 >
-                  <img src={product.images[0]} alt={product.name} className="h-14 w-12 rounded-md object-cover" />
+                  <img src={product.images[0]} alt={product.name} className="h-16 w-14 rounded-xl object-cover" />
                   <div className="flex-1">
-                    <p className="font-medium text-moonberry-brown">{product.name}</p>
+                    <p className="font-serif text-lg text-moonberry-brown">{product.name}</p>
                     <p className="text-xs uppercase tracking-wide text-moonberry-mauve">{product.category}</p>
                   </div>
                   <p className="text-sm text-moonberry-brown">{formatINR(product.price)}</p>
@@ -378,28 +376,28 @@ export function CartDrawer({
         onClick={onClose}
       />
       <aside
-        className={`absolute right-0 top-0 h-full w-full max-w-md bg-[#fffdfc] p-6 transition-transform duration-300 ${
+        className={`absolute right-0 top-0 flex h-full w-full max-w-md flex-col border-l border-moonberry-rose/20 bg-[#fffcfb]/95 p-6 shadow-[-12px_0_40px_rgba(74,59,61,0.08)] backdrop-blur-xl transition-transform duration-300 ${
           open ? 'translate-x-0' : 'translate-x-full'
         }`}
       >
         <div className="mb-8 flex items-center justify-between">
-          <h3 className="font-serif text-3xl">Your Cart</h3>
+          <h3 className="font-serif text-3xl text-moonberry-brown">Your Cart</h3>
           <button type="button" onClick={onClose} aria-label="Close cart">
             <X />
           </button>
         </div>
-        <div className="space-y-5">
+        <div className="flex-1 space-y-5 overflow-y-auto pr-1">
           {items.length === 0 && (
-            <div className="rounded-2xl border border-dashed border-moonberry-rose/40 bg-white/80 p-5 text-center">
-              <p className="text-moonberry-mauve">Your cart is currently empty.</p>
-              <p className="mt-1 text-sm text-moonberry-mauve">Add your beauty picks to continue checkout.</p>
+            <div className="empty-state border-dashed bg-white/50 p-8">
+              <p className="font-serif text-2xl text-moonberry-brown">Your bag is empty</p>
+              <p className="mt-2 text-sm text-moonberry-mauve">Discover something beautiful to add.</p>
             </div>
           )}
           {items.map((item) => (
-            <div key={item.lineId || item.id} className="flex gap-4 rounded-2xl border border-moonberry-rose/30 p-3">
+            <div key={item.lineId || item.id} className="flex gap-4 rounded-2xl border border-moonberry-rose/20 bg-white/80 p-4">
               <img src={item.image} alt={item.name} className="h-24 w-20 rounded-xl object-cover" />
               <div className="flex-1">
-                <h4 className="font-medium text-moonberry-brown">{item.name}</h4>
+                <h4 className="font-serif text-lg leading-tight text-moonberry-brown">{item.name}</h4>
                 <div className="mt-2 flex items-center gap-2">
                   <button
                     type="button"
@@ -432,7 +430,7 @@ export function CartDrawer({
             </div>
           ))}
         </div>
-        <div className="mt-8 border-t border-moonberry-rose/30 pt-5">
+        <div className="mt-auto border-t border-moonberry-rose/30 pt-5">
           <div className="mb-4 rounded-xl bg-moonberry-cream px-3 py-2 text-sm text-moonberry-brown">
             {remainingForFreeShipping > 0
               ? `${formatINR(remainingForFreeShipping)} away from free shipping in India`
@@ -459,7 +457,7 @@ export function CartDrawer({
             type="button"
             disabled={items.length === 0}
             onClick={onCheckout}
-            className="w-full rounded-full bg-moonberry-brown px-6 py-3 text-white transition hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60"
+            className="btn-primary w-full disabled:cursor-not-allowed disabled:opacity-60"
           >
             Proceed to Checkout
           </button>
@@ -471,7 +469,7 @@ export function CartDrawer({
             Clear Cart
           </button>
           <p className="mt-3 text-center text-xs text-moonberry-mauve">
-            Review your bag and complete payment on the checkout page — all on Moonberry.
+            Secure checkout powered by Shopify.
           </p>
         </div>
       </aside>
@@ -481,54 +479,105 @@ export function CartDrawer({
 
 export function Footer() {
   return (
-    <footer className="mt-20 border-t border-moonberry-rose/30 bg-white/70">
-      <div className="section-shell grid gap-8 py-14 md:grid-cols-3">
-        <div>
-          <h3 className="font-serif text-3xl">Moonberry</h3>
-          <p className="mt-2 max-w-sm text-sm text-moonberry-mauve">
-            A modern beauty brand crafted for all identities, with refined self-care rituals.
+    <footer className="relative mt-28 overflow-hidden border-t border-moonberry-rose/20 bg-white/80">
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-moonberry-blush to-transparent" />
+      <div className="section-shell grid gap-10 py-16 md:grid-cols-2 lg:grid-cols-4">
+        <div className="lg:col-span-1">
+          <BrandMark size="md" />
+          <p className="mt-4 max-w-xs text-sm leading-relaxed text-moonberry-mauve">
+            A modern beauty brand crafted for all identities, with refined self-care rituals and
+            boutique-quality formulations.
           </p>
         </div>
         <div>
-          <h4 className="text-xs tracking-[0.2em] uppercase text-moonberry-mauve">Customer Care</h4>
-          <ul className="mt-3 space-y-2 text-sm text-moonberry-brown">
+          <h4 className="text-xs font-medium tracking-[0.2em] uppercase text-moonberry-mauve">Shop</h4>
+          <ul className="mt-4 space-y-2.5 text-sm text-moonberry-brown">
             <li>
-              <Link to="/shipping-returns" className="hover:text-moonberry-mauve">
+              <Link to="/shop" className="transition hover:text-moonberry-rose">
+                All products
+              </Link>
+            </li>
+            <li>
+              <Link to="/collections" className="transition hover:text-moonberry-rose">
+                Collections
+              </Link>
+            </li>
+            <li>
+              <Link to="/about" className="transition hover:text-moonberry-rose">
+                About us
+              </Link>
+            </li>
+          </ul>
+        </div>
+        <div>
+          <h4 className="text-xs font-medium tracking-[0.2em] uppercase text-moonberry-mauve">Customer Care</h4>
+          <ul className="mt-4 space-y-2.5 text-sm text-moonberry-brown">
+            <li>
+              <Link to="/shipping-returns" className="transition hover:text-moonberry-rose">
                 Shipping & returns
               </Link>
             </li>
             <li>
-              <Link to="/ingredients" className="hover:text-moonberry-mauve">
+              <Link to="/ingredients" className="transition hover:text-moonberry-rose">
                 Ingredients & usage
               </Link>
             </li>
             <li>
-              <Link to="/faq" className="hover:text-moonberry-mauve">
+              <Link to="/faq" className="transition hover:text-moonberry-rose">
                 FAQ
               </Link>
             </li>
             <li>
-              <Link to="/privacy" className="hover:text-moonberry-mauve">
+              <Link to="/privacy" className="transition hover:text-moonberry-rose">
                 Privacy policy
               </Link>
             </li>
             <li>
-              <Link to="/terms" className="hover:text-moonberry-mauve">
+              <Link to="/terms" className="transition hover:text-moonberry-rose">
                 Terms of use
               </Link>
             </li>
           </ul>
         </div>
         <div>
-          <h4 className="text-xs tracking-[0.2em] uppercase text-moonberry-mauve">Visit</h4>
-          <p className="mt-3">
-            <a href={`mailto:${CONTACT_EMAIL}`} className="hover:text-moonberry-brown">
+          <h4 className="text-xs font-medium tracking-[0.2em] uppercase text-moonberry-mauve">Connect</h4>
+          <p className="mt-4 text-sm text-moonberry-brown">
+            <a href={`mailto:${CONTACT_EMAIL}`} className="transition hover:text-moonberry-rose">
               {CONTACT_EMAIL}
             </a>
           </p>
-          <p>Instagram: @moonberry</p>
+        </div>
+      </div>
+      <div className="border-t border-moonberry-rose/15 bg-moonberry-cream/40">
+        <div className="section-shell flex flex-col items-center justify-between gap-2 py-5 text-center text-xs text-moonberry-mauve sm:flex-row sm:text-left">
+          <p>&copy; {new Date().getFullYear()} Moonberry. All rights reserved.</p>
+          <p className="tracking-wide">Crafted with care in India</p>
         </div>
       </div>
     </footer>
+  )
+}
+
+export function CatalogSkeleton() {
+  return (
+    <div className="section-shell py-16">
+      <div className="mx-auto mb-12 max-w-md">
+        <div className="skeleton h-3 w-24 rounded-full" />
+        <div className="skeleton mt-4 h-10 w-full rounded-xl" />
+        <div className="skeleton mt-3 h-4 w-3/4 rounded-lg" />
+      </div>
+      <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+        {Array.from({ length: 6 }).map((_, index) => (
+          <div key={index} className="card-surface p-3">
+            <div className="skeleton h-[320px] rounded-2xl" />
+            <div className="mt-4 space-y-2 px-1">
+              <div className="skeleton h-5 w-2/3 rounded-lg" />
+              <div className="skeleton h-3 w-1/3 rounded-lg" />
+              <div className="skeleton mt-4 h-10 w-full rounded-full" />
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
   )
 }

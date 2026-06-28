@@ -1,15 +1,16 @@
 import { Link } from 'react-router-dom'
+import { ShoppingBag } from 'lucide-react'
 import { formatINR } from '../lib/currency'
 
 function SwatchRow({ shades = [] }) {
   if (!shades.length) return null
 
   return (
-    <div className="mt-3 flex items-center gap-2">
+    <div className="mt-3 flex items-center gap-1.5">
       {shades.slice(0, 4).map((shade) => (
         <span
           key={shade}
-          className="h-4 w-4 rounded-full border border-white/80 shadow-sm"
+          className="h-4 w-4 rounded-full border border-white/90 shadow-sm ring-1 ring-moonberry-rose/15"
           style={{ backgroundColor: shade }}
           aria-hidden
         />
@@ -25,53 +26,61 @@ export function ProductCard({ product, onQuickAdd }) {
     : 0
 
   return (
-    <article className="group rounded-3xl border border-white/60 bg-white/70 p-3 soft-shadow transition duration-500 hover:-translate-y-1 hover:shadow-[0_18px_50px_rgba(74,59,61,0.16)]">
-      <Link to={`/product/${product.slug}`} className="relative block overflow-hidden rounded-2xl">
-        <div className="absolute left-3 top-3 z-10 flex gap-2">
-          {product.bestSeller ? (
-            <span className="rounded-full bg-moonberry-brown px-3 py-1 text-[10px] uppercase tracking-[0.14em] text-white">
-              Bestseller
-            </span>
-          ) : null}
-          {hasDiscount ? (
-            <span className="rounded-full bg-white/90 px-3 py-1 text-[10px] uppercase tracking-[0.14em] text-moonberry-brown">
-              {discountPercent}% Off
-            </span>
-          ) : null}
-        </div>
-        <img
-          src={product.images[0]}
-          alt={product.name}
-          className="h-[360px] w-full object-cover transition duration-700 group-hover:scale-105"
-          loading="lazy"
-        />
-      </Link>
-      <div className="px-1 pb-2 pt-4">
+    <article className="group card-surface p-3 transition duration-500 hover:-translate-y-1.5 hover:shadow-[0_22px_60px_rgba(74,59,61,0.13)]">
+      <div className="relative overflow-hidden rounded-2xl bg-moonberry-cream/40">
+        <Link to={`/product/${product.slug}`} className="relative block">
+          <div className="absolute left-3 top-3 z-10 flex flex-wrap gap-2">
+            {product.bestSeller ? (
+              <span className="rounded-full bg-moonberry-brown px-3 py-1 text-[10px] font-medium uppercase tracking-[0.14em] text-white shadow-sm">
+                Bestseller
+              </span>
+            ) : null}
+            {hasDiscount ? (
+              <span className="rounded-full bg-white/95 px-3 py-1 text-[10px] font-medium uppercase tracking-[0.14em] text-moonberry-brown shadow-sm">
+                {discountPercent}% Off
+              </span>
+            ) : null}
+          </div>
+          <img
+            src={product.images[0]}
+            alt={product.name}
+            className="aspect-[4/5] w-full object-cover transition duration-700 group-hover:scale-[1.04]"
+            loading="lazy"
+          />
+        </Link>
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-moonberry-brown/40 via-transparent to-transparent opacity-0 transition duration-500 group-hover:opacity-100" />
+        <button
+          type="button"
+          onClick={() => onQuickAdd(product)}
+          className="absolute bottom-4 left-1/2 z-10 flex -translate-x-1/2 translate-y-3 items-center gap-2 rounded-full bg-white/95 px-5 py-2.5 text-[10px] font-medium uppercase tracking-[0.14em] text-moonberry-brown opacity-0 shadow-lg transition duration-300 group-hover:translate-y-0 group-hover:opacity-100 hover:bg-white"
+        >
+          <ShoppingBag size={14} aria-hidden />
+          Quick add
+        </button>
+      </div>
+      <div className="px-1 pb-2 pt-5">
         <div className="mb-2 flex items-start justify-between gap-3">
-          <div>
-            <h3 className="font-serif text-2xl leading-tight text-moonberry-brown">
-              <Link to={`/product/${product.slug}`}>{product.name}</Link>
-            </h3>
-            <p className="text-xs uppercase tracking-[0.15em] text-moonberry-mauve">
+          <div className="min-w-0">
+            <p className="text-[10px] uppercase tracking-[0.18em] text-moonberry-mauve">
               {product.collection}
             </p>
-            <p className="mt-1 text-[11px] uppercase tracking-[0.16em] text-moonberry-brown/70">
-              {product.category}
-            </p>
+            <h3 className="mt-1 font-serif text-2xl leading-tight text-moonberry-brown">
+              <Link to={`/product/${product.slug}`} className="transition hover:text-moonberry-rose">
+                {product.name}
+              </Link>
+            </h3>
           </div>
-          <div className="text-right">
-            <span className="text-moonberry-brown">{formatINR(product.price)}</span>
+          <div className="shrink-0 text-right">
+            <span className="font-serif text-lg text-moonberry-brown">{formatINR(product.price)}</span>
             {hasDiscount ? (
-              <p className="text-xs text-moonberry-mauve line-through">{formatINR(product.compareAtPrice)}</p>
+              <p className="text-xs text-moonberry-mauve line-through">
+                {formatINR(product.compareAtPrice)}
+              </p>
             ) : null}
           </div>
         </div>
         <SwatchRow shades={product.shadeHex} />
-        <button
-          type="button"
-          onClick={() => onQuickAdd(product)}
-          className="mt-3 w-full rounded-full border border-moonberry-rose/40 px-4 py-2 text-sm tracking-[0.11em] uppercase transition hover:bg-moonberry-brown hover:text-white"
-        >
+        <button type="button" onClick={() => onQuickAdd(product)} className="btn-ghost mt-4 w-full">
           Add to Bag
         </button>
       </div>
@@ -79,12 +88,20 @@ export function ProductCard({ product, onQuickAdd }) {
   )
 }
 
-export function SectionHeading({ eyebrow, title, description }) {
+export function SectionHeading({ eyebrow, title, description, align = 'left' }) {
+  const centered = align === 'center'
+
   return (
-    <div className="mb-10 max-w-3xl">
-      <p className="mb-3 text-xs uppercase tracking-[0.28em] text-moonberry-mauve">{eyebrow}</p>
-      <h2 className="font-serif text-4xl leading-[1] text-moonberry-brown md:text-5xl">{title}</h2>
-      {description ? <p className="mt-3 text-moonberry-mauve">{description}</p> : null}
-    </div>
+    <header className={`mb-12 max-w-3xl ${centered ? 'mx-auto text-center' : ''}`}>
+      {eyebrow ? (
+        <p className={`eyebrow ${centered ? 'eyebrow-center' : ''}`}>{eyebrow}</p>
+      ) : null}
+      <h2 className="font-serif text-4xl leading-[1.02] text-moonberry-brown md:text-5xl">{title}</h2>
+      {description ? (
+        <p className={`mt-4 text-base leading-relaxed text-moonberry-mauve ${centered ? 'mx-auto' : ''}`}>
+          {description}
+        </p>
+      ) : null}
+    </header>
   )
 }

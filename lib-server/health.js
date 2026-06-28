@@ -1,4 +1,5 @@
 import { getServerConfig } from './env.js'
+import { fetchAdminTokenInfo } from './shopify-admin-auth.js'
 
 export function getCheckoutReadiness() {
   const config = getServerConfig()
@@ -17,5 +18,24 @@ export function getCheckoutReadiness() {
 }
 
 export async function handleHealthCheck() {
-  return getCheckoutReadiness()
+  const readiness = getCheckoutReadiness()
+  if (!readiness.admin || readiness.adminAuth !== 'dev_dashboard') {
+    return readiness
+  }
+
+  try {
+    const tokenInfo = await fetchAdminTokenInfo({ forceRefresh: true })
+    return {
+      ...readiness,
+      adminScopes: tokenInfo.scopes,
+      hasWriteDraftOrders: tokenInfo.hasWriteDraftOrders,
+      codReady: readiness.codReady && tokenInfo.hasWriteDraftOrders,
+    }
+  } catch (error) {
+    return {
+      ...readiness,
+      adminTokenError: error?.message || 'Could not fetch Admin API token.',
+      codReady: false,
+    }
+  }
 }

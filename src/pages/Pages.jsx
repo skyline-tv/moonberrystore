@@ -1,162 +1,129 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { CheckCircle2 } from 'lucide-react'
-import { testimonials } from '../data/mockData'
+import { CheckCircle2, Mail, MapPin, Phone } from 'lucide-react'
+import { BrandMark } from '../components/BrandMark'
+import {
+  Breadcrumbs,
+  CheckoutSection,
+  ContactCard,
+  EmptyState,
+  LuxeAccordion,
+  PageHero,
+  ProseArticle,
+} from '../components/PageElements'
 import { ProductCard, SectionHeading } from '../components/ProductCard'
 import { formatINR } from '../lib/currency'
 import { calculateOrderTotals } from '../lib/pricing'
 import { fetchCheckoutReadiness } from '../lib/checkoutApi'
 import { getCollectionByHandle, hasShopifyConfig, pickVariantForOption } from '../lib/shopify'
-import { CONTACT_ADDRESS, CONTACT_EMAIL, CONTACT_PHONE } from '../lib/site'
+import { CONTACT_ADDRESS, CONTACT_EMAIL, CONTACT_PHONE, HAS_CONTACT_PHONE } from '../lib/site'
 
 export function HomePage({ onQuickAdd, products = [], collections = [] }) {
-  const bestSellers = products.filter((item) => item.bestSeller)
-  const [email, setEmail] = useState('')
-  const [newsletterMessage, setNewsletterMessage] = useState('')
-  const [isSubscribing, setIsSubscribing] = useState(false)
+  const bestSellers = products.filter((item) => item.bestSeller).slice(0, 6)
+  const heroImage = collections[0]?.image || products[0]?.images?.[0]
 
   return (
     <div>
-      <section className="section-shell grid min-h-[78vh] items-center gap-10 py-14 md:grid-cols-2">
-        <div className="relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-[#f7f1ee] via-[#eedfe2] to-[#cfaeb4] p-8 md:p-12">
+      <section className="section-shell grid min-h-[80vh] items-center gap-12 py-14 md:grid-cols-2 md:py-20">
+        <div className="animate-fade-in-up hero-panel">
           <div className="pointer-events-none absolute -left-8 -top-16 h-52 w-52 rounded-full bg-white/40 blur-2xl" />
-          <div className="pointer-events-none absolute -bottom-16 right-0 h-64 w-64 rounded-full bg-moonberry-mauve/30 blur-3xl" />
-          <p className="mb-4 text-xs uppercase tracking-[0.28em] text-moonberry-mauve">Moonberry Beauty Studio</p>
-          <h1 className="editorial-heading">Perfume, Skincare, Makeup and Nails - For Everyone.</h1>
-          <p className="mt-6 max-w-lg text-moonberry-mauve">
-            Discover premium fragrances, skincare, cosmetics, and nail essentials designed for every style, tone, and identity.
+          <div className="pointer-events-none absolute -bottom-16 right-0 h-64 w-64 rounded-full bg-moonberry-mauve/25 blur-3xl" />
+          <p className="eyebrow">Moonberry</p>
+          <h1 className="editorial-heading">
+            Perfume, Skincare, Makeup &amp; Nails — For Everyone.
+          </h1>
+          <p className="mt-6 max-w-lg text-base leading-relaxed text-moonberry-mauve md:text-[17px]">
+            Discover premium fragrances, skincare, cosmetics, and nail essentials designed for every
+            style, tone, and identity.
           </p>
-          <div className="mt-8 flex flex-wrap gap-3">
-            <Link to="/shop" className="rounded-full bg-moonberry-brown px-7 py-3 text-sm tracking-[0.15em] uppercase text-white transition hover:opacity-90">Shop Now</Link>
-            <Link to="/collections" className="rounded-full border border-moonberry-rose/50 px-7 py-3 text-sm tracking-[0.15em] uppercase transition hover:bg-white/70">Explore Collections</Link>
-          </div>
-        </div>
-        <div className="relative">
-          <img
-            src="https://images.unsplash.com/photo-1522337660859-02fbefca4702?auto=format&fit=crop&w=1300&q=80"
-            alt="Moonberry beauty hero"
-            className="soft-shadow h-[620px] w-full rounded-[2.4rem] object-cover"
-          />
-          <div className="glass absolute -bottom-7 right-6 rounded-2xl p-4">
-            <p className="text-xs uppercase tracking-[0.18em] text-moonberry-mauve">Spring Capsule</p>
-            <p className="font-serif text-2xl">Beauty Launches</p>
-          </div>
-        </div>
-      </section>
-
-      <section className="section-shell py-16">
-        <SectionHeading
-          eyebrow="Featured Collections"
-          title="Curated for Modern Luxury"
-          description="Editorial beauty edits with a boutique sensibility."
-        />
-        <div className="grid gap-5 md:grid-cols-3">
-          {collections.map((collection) => (
-            <Link
-              key={collection.id}
-              to={`/collections/${collection.slug}`}
-              className="group relative block overflow-hidden rounded-3xl"
-            >
-              <img
-                src={collection.image}
-                alt={collection.name}
-                className="h-80 w-full object-cover transition duration-700 group-hover:scale-105"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-black/20 to-transparent p-6 text-white">
-                <p className="mt-44 text-xs uppercase tracking-[0.2em]">Collection</p>
-                <h3 className="font-serif text-3xl">{collection.name}</h3>
-              </div>
+          <div className="mt-10 flex flex-wrap gap-3">
+            <Link to="/shop" className="btn-primary">
+              Shop Now
             </Link>
-          ))}
-        </div>
-      </section>
-
-      <section className="section-shell py-16">
-        <SectionHeading eyebrow="Best Sellers" title="Most Loved Pieces" />
-        <div className="grid gap-5 md:grid-cols-3">
-          {bestSellers.map((product) => (
-            <ProductCard key={product.id} product={product} onQuickAdd={onQuickAdd} />
-          ))}
-        </div>
-      </section>
-
-      <section className="section-shell grid gap-6 py-16 md:grid-cols-2">
-        <img
-          src="https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=1300&q=80"
-          alt="Brand story"
-          className="h-[500px] w-full rounded-3xl object-cover"
-        />
-        <div className="flex items-center rounded-3xl bg-white/70 p-8">
-          <div>
-            <p className="text-xs uppercase tracking-[0.2em] text-moonberry-mauve">Our Story</p>
-            <h2 className="mt-2 font-serif text-5xl leading-none">Self-expression, crafted beautifully.</h2>
-            <p className="mt-5 text-moonberry-mauve">
-              Moonberry was built around the idea that beauty can feel calm, confident, and exquisitely modern. Every formula is developed with meticulous attention to texture, tone, scent, and finish.
-            </p>
+            {collections.length > 0 ? (
+              <Link to="/collections" className="btn-secondary">
+                Explore Collections
+              </Link>
+            ) : null}
           </div>
         </div>
-      </section>
-
-      <section className="section-shell py-16">
-        <SectionHeading eyebrow="Testimonials" title="Loved by the Moonberry Community" />
-        <div className="grid gap-5 md:grid-cols-3">
-          {testimonials.map((testimonial) => (
-            <article key={testimonial.id} className="rounded-3xl bg-white/80 p-6">
-              <p className="text-lg leading-relaxed text-moonberry-brown">{testimonial.quote}</p>
-              <p className="mt-6 text-sm uppercase tracking-[0.15em] text-moonberry-mauve">{testimonial.name}</p>
-            </article>
-          ))}
-        </div>
-      </section>
-
-      <section className="section-shell pb-20 pt-8">
-        <div className="rounded-3xl bg-moonberry-brown px-7 py-12 text-center text-white">
-          <p className="text-xs uppercase tracking-[0.24em] text-moonberry-rose">Newsletter</p>
-          <h3 className="mt-3 font-serif text-4xl">Join the Moonberry Edit</h3>
-          <p className="mx-auto mt-3 max-w-lg text-white/80">Receive early access to beauty launches, exclusive offers, and private editorials.</p>
-          <div className="mx-auto mt-6 flex max-w-xl flex-col gap-3 sm:flex-row">
-            <input
-              value={email}
-              onChange={(event) => {
-                setEmail(event.target.value)
-                setNewsletterMessage('')
-              }}
-              className="h-12 flex-1 rounded-full border border-white/30 bg-white/10 px-5 text-white placeholder:text-white/70 outline-none"
-              placeholder="Enter your email"
+        <div className="animate-fade-in-up animate-delay-200 relative flex items-center justify-center">
+          {heroImage ? (
+            <img
+              src={heroImage}
+              alt="Moonberry collection"
+              className="soft-shadow h-[min(580px,68vh)] w-full rounded-4xl object-cover"
             />
-            <button
-              type="button"
-              disabled={isSubscribing}
-              className="h-12 rounded-full bg-white px-6 text-sm tracking-[0.15em] uppercase text-moonberry-brown disabled:cursor-not-allowed disabled:opacity-60"
-              onClick={async () => {
-                if (!email.includes('@')) {
-                  setNewsletterMessage('Please enter a valid email address.')
-                  return
-                }
-                setIsSubscribing(true)
-                await new Promise((resolve) => setTimeout(resolve, 600))
-                setNewsletterMessage('Thanks for subscribing. You will receive launch alerts soon.')
-                setEmail('')
-                setIsSubscribing(false)
-              }}
-            >
-              {isSubscribing ? 'Subscribing...' : 'Subscribe'}
-            </button>
-          </div>
-          {newsletterMessage ? (
-            <p className="mt-3 text-sm text-white/80" aria-live="polite">
-              {newsletterMessage}
-            </p>
-          ) : null}
+          ) : (
+            <div className="flex h-[min(420px,55vh)] w-full items-center justify-center rounded-4xl border border-white/50 bg-white/45">
+              <BrandMark size="lg" />
+            </div>
+          )}
         </div>
       </section>
 
-      <section className="section-shell pb-10">
-        <div className="grid gap-3 rounded-3xl border border-moonberry-rose/25 bg-white/70 p-6 text-center md:grid-cols-4 md:text-left">
-          <p className="text-sm text-moonberry-brown">UPI, cards and wallet payments</p>
-          <p className="text-sm text-moonberry-brown">Cash on Delivery in serviceable PIN codes</p>
-          <p className="text-sm text-moonberry-brown">Free shipping above Rs. 999</p>
-          <p className="text-sm text-moonberry-brown">Made for Indian weather and routines</p>
+      {collections.length > 0 ? (
+        <section className="section-shell py-20">
+          <SectionHeading
+            eyebrow="Collections"
+            title="Shop by Edit"
+            description="Curated selections from our catalog."
+          />
+          <div className="grid gap-6 md:grid-cols-3">
+            {collections.slice(0, 3).map((collection) => (
+              <Link
+                key={collection.id}
+                to={`/collections/${collection.slug}`}
+                className="group relative block overflow-hidden rounded-4xl shadow-[0_12px_40px_rgba(74,59,61,0.08)]"
+              >
+                {collection.image ? (
+                  <img
+                    src={collection.image}
+                    alt={collection.name}
+                    className="h-80 w-full object-cover transition duration-700 group-hover:scale-105"
+                  />
+                ) : (
+                  <div className="h-80 w-full bg-gradient-to-br from-moonberry-cream to-moonberry-blush" />
+                )}
+                <div className="absolute inset-0 bg-gradient-to-t from-moonberry-brown/70 via-moonberry-brown/25 to-transparent p-6 text-white transition duration-500 group-hover:from-moonberry-brown/80">
+                  <p className="mt-44 text-xs uppercase tracking-[0.2em] text-white/80">Collection</p>
+                  <h3 className="font-serif text-3xl">{collection.name}</h3>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </section>
+      ) : null}
+
+      {bestSellers.length > 0 ? (
+        <section className="section-shell border-t border-moonberry-rose/15 py-20">
+          <SectionHeading eyebrow="Best Sellers" title="Most Loved Pieces" />
+          <div className="grid gap-5 md:grid-cols-3">
+            {bestSellers.map((product) => (
+              <ProductCard key={product.id} product={product} onQuickAdd={onQuickAdd} />
+            ))}
+          </div>
+        </section>
+      ) : null}
+
+      <section className="section-shell pb-24 pt-4">
+        <div className="card-surface relative overflow-hidden">
+          <div className="pointer-events-none absolute -right-16 top-0 h-48 w-48 rounded-full bg-moonberry-blush/40 blur-3xl" />
+          <div className="relative flex flex-col items-start gap-8 p-8 md:flex-row md:items-center md:justify-between md:p-12">
+          <div className="max-w-xl">
+            <p className="text-xs uppercase tracking-[0.2em] text-moonberry-mauve">Our Story</p>
+            <h2 className="mt-2 font-serif text-3xl leading-tight text-moonberry-brown md:text-4xl">
+              Self-expression, crafted beautifully.
+            </h2>
+            <p className="mt-4 text-base leading-relaxed text-moonberry-mauve">
+              Moonberry is a boutique beauty label where fragrance, skin, and nail rituals meet —
+              formulated with rich textures and refined scents that feel quietly luxurious.
+            </p>
+          </div>
+          <Link to="/about" className="btn-secondary shrink-0">
+            About us
+          </Link>
+          </div>
         </div>
       </section>
     </div>
@@ -194,19 +161,23 @@ export function ShopPage({ onQuickAdd, products = [] }) {
   }, [activeCategory, products, query, sortBy])
 
   return (
-    <main className="section-shell py-16">
-      <SectionHeading eyebrow="Shop" title="All Products" description="Luxury perfumes, skincare, cosmetics, and nail care." />
-      <div className="mb-6 grid gap-3 rounded-2xl border border-moonberry-rose/30 bg-white/70 p-4 md:grid-cols-[1fr_auto]">
+    <main className="page-main">
+      <PageHero
+        eyebrow="Shop"
+        title="All Products"
+        description="Luxury perfumes, skincare, cosmetics, and nail care — thoughtfully selected for you."
+      />
+      <div className="mb-8 grid gap-3 rounded-3xl border border-moonberry-rose/20 bg-white/70 p-4 md:grid-cols-[1fr_auto]">
         <input
           value={query}
           onChange={(event) => setQuery(event.target.value)}
           placeholder="Search products..."
-          className="h-11 rounded-xl border border-moonberry-rose/40 bg-white px-4 outline-none"
+          className="input-field h-11"
         />
         <select
           value={sortBy}
           onChange={(event) => setSortBy(event.target.value)}
-          className="h-11 rounded-xl border border-moonberry-rose/40 bg-white px-4 text-sm text-moonberry-brown outline-none"
+          className="input-field h-11 text-sm"
         >
           <option value="featured">Sort: Featured</option>
           <option value="price-low-high">Price: Low to High</option>
@@ -220,11 +191,7 @@ export function ShopPage({ onQuickAdd, products = [] }) {
             key={category}
             type="button"
             onClick={() => setActiveCategory(category)}
-            className={`rounded-full px-5 py-2 text-xs uppercase tracking-[0.16em] transition ${
-              activeCategory === category
-                ? 'bg-moonberry-brown text-white'
-                : 'border border-moonberry-rose/50 bg-white/70 text-moonberry-brown'
-            }`}
+            className={`filter-pill ${activeCategory === category ? 'filter-pill-active' : ''}`}
           >
             {category}
           </button>
@@ -240,10 +207,10 @@ export function ShopPage({ onQuickAdd, products = [] }) {
           ))}
         </div>
       ) : (
-        <div className="rounded-3xl border border-dashed border-moonberry-rose/40 bg-white/60 p-8 text-center">
-          <p className="text-moonberry-brown">No products found for your filters.</p>
-          <p className="mt-2 text-sm text-moonberry-mauve">Try changing category, search, or sort options.</p>
-        </div>
+        <EmptyState
+          title="No products found"
+          description="Try changing category, search, or sort options."
+        />
       )}
     </main>
   )
@@ -251,22 +218,28 @@ export function ShopPage({ onQuickAdd, products = [] }) {
 
 export function CollectionsPage({ collections = [] }) {
   return (
-    <main className="section-shell py-16">
-      <SectionHeading eyebrow="Collections" title="Browse by Edit" />
-      <div className="space-y-6">
-        {collections.map((collection) => (
+    <main className="page-main">
+      <PageHero
+        eyebrow="Collections"
+        title="Browse by Edit"
+        description="Editorial beauty collections, each with its own mood and ritual."
+      />
+      <div className="space-y-8">
+        {collections.map((collection, index) => (
           <article
             key={collection.id}
-            className="grid gap-5 overflow-hidden rounded-3xl bg-white/80 md:grid-cols-[1.3fr_1fr]"
+            className={`collection-editorial group ${index % 2 === 1 ? 'md:[&>div:first-child]:order-2' : ''}`}
           >
-            <img src={collection.image} alt={collection.name} className="h-80 w-full object-cover" />
-            <div className="p-8">
-              <h3 className="font-serif text-4xl">{collection.name}</h3>
-              <p className="mt-3 text-moonberry-mauve">{collection.description}</p>
-              <Link
-                to={`/collections/${collection.slug}`}
-                className="mt-6 inline-flex rounded-full border border-moonberry-rose/50 px-6 py-2 text-sm uppercase tracking-[0.14em] transition hover:bg-moonberry-cream"
-              >
+            {collection.image ? (
+              <img src={collection.image} alt={collection.name} className="collection-editorial-image" />
+            ) : (
+              <div className="h-72 bg-gradient-to-br from-moonberry-cream to-moonberry-blush md:min-h-[22rem]" />
+            )}
+            <div className="flex flex-col justify-center p-8 md:p-12">
+              <p className="eyebrow">Collection</p>
+              <h3 className="font-serif text-4xl text-moonberry-brown md:text-5xl">{collection.name}</h3>
+              <p className="mt-4 leading-relaxed text-moonberry-mauve">{collection.description}</p>
+              <Link to={`/collections/${collection.slug}`} className="btn-secondary mt-8 w-fit">
                 View Collection
               </Link>
             </div>
@@ -323,57 +296,65 @@ export function CollectionDetailPage({ onQuickAdd }) {
 
   if (loading) {
     return (
-      <main className="section-shell py-20">
-        <p className="text-center text-moonberry-mauve">Loading collection...</p>
+      <main className="page-main">
+        <div className="flex min-h-[40vh] items-center justify-center">
+          <p className="text-moonberry-mauve">Loading collection…</p>
+        </div>
       </main>
     )
   }
 
   if (notFound || !collection) {
     return (
-      <main className="section-shell py-16">
-        <div className="rounded-3xl border border-moonberry-rose/30 bg-white/70 p-10 text-center">
-          <h2 className="font-serif text-3xl text-moonberry-brown">Collection not found</h2>
-          <p className="mt-3 text-moonberry-mauve">This collection may not exist or is unavailable.</p>
-          <Link
-            to="/collections"
-            className="mt-6 inline-flex rounded-full bg-moonberry-brown px-6 py-3 text-sm uppercase tracking-[0.12em] text-white"
-          >
-            All collections
-          </Link>
-        </div>
+      <main className="page-main">
+        <EmptyState
+          eyebrow="Collections"
+          title="Collection not found"
+          description="This collection may not exist or is unavailable."
+          action={
+            <Link to="/collections" className="btn-primary">
+              All collections
+            </Link>
+          }
+        />
       </main>
     )
   }
 
   return (
-    <main className="section-shell py-16">
-      <p className="mb-6 text-sm text-moonberry-mauve">
-        <Link to="/" className="hover:text-moonberry-brown">
-          Home
-        </Link>{' '}
-        /{' '}
-        <Link to="/collections" className="hover:text-moonberry-brown">
-          Collections
-        </Link>{' '}
-        / <span className="text-moonberry-brown">{collection.name}</span>
-      </p>
-      <div className="grid gap-8 lg:grid-cols-[1fr_1.2fr]">
-        <div className="overflow-hidden rounded-3xl">
-          <img src={collection.image} alt={collection.name} className="h-96 w-full object-cover lg:h-full lg:min-h-[420px]" />
+    <main className="page-main">
+      <Breadcrumbs
+        items={[
+          { label: 'Home', to: '/' },
+          { label: 'Collections', to: '/collections' },
+          { label: collection.name },
+        ]}
+      />
+      <div className="grid gap-10 lg:grid-cols-[1fr_1.15fr] lg:items-center">
+        <div className="overflow-hidden rounded-4xl">
+          {collection.image ? (
+            <img
+              src={collection.image}
+              alt={collection.name}
+              className="soft-shadow aspect-[4/5] w-full object-cover lg:aspect-auto lg:min-h-[28rem]"
+            />
+          ) : (
+            <div className="aspect-[4/5] w-full bg-gradient-to-br from-moonberry-cream to-moonberry-blush lg:min-h-[28rem]" />
+          )}
         </div>
         <div>
-          <p className="text-xs uppercase tracking-[0.2em] text-moonberry-mauve">Collection</p>
-          <h1 className="mt-2 font-serif text-5xl text-moonberry-brown">{collection.name}</h1>
-          <p className="mt-4 text-moonberry-mauve">{collection.description}</p>
+          <p className="eyebrow">Collection</p>
+          <h1 className="page-title">{collection.name}</h1>
+          <p className="page-description">{collection.description}</p>
         </div>
       </div>
-      <div className="mt-14">
-        <h2 className="font-serif text-3xl text-moonberry-brown">Products in this edit</h2>
+      <div className="mt-20 border-t border-moonberry-rose/15 pt-16">
+        <SectionHeading eyebrow="The Edit" title="Products in this collection" />
         {products.length === 0 ? (
-          <p className="mt-6 rounded-3xl border border-dashed border-moonberry-rose/40 bg-white/60 p-8 text-center text-moonberry-mauve">
-            No products in this collection yet.
-          </p>
+          <EmptyState
+            title="No products yet"
+            description="This collection is being curated. Check back soon."
+          />
         ) : (
           <div className="mt-8 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
             {products.map((product) => (
@@ -389,8 +370,6 @@ export function CollectionDetailPage({ onQuickAdd }) {
 export function ProductPage({ onQuickAdd, products = [] }) {
   const { slug } = useParams()
   const product = useMemo(() => products.find((item) => item.slug === slug) || null, [products, slug])
-  const [pincode, setPincode] = useState('')
-  const [deliveryMessage, setDeliveryMessage] = useState('')
   const [selection, setSelection] = useState({
     slug: product?.slug ?? '',
     activeImage: product?.images?.[0] ?? '',
@@ -406,19 +385,17 @@ export function ProductPage({ onQuickAdd, products = [] }) {
 
   if (!product) {
     return (
-      <main className="section-shell py-16">
-        <div className="rounded-3xl border border-moonberry-rose/30 bg-white/70 p-10 text-center">
-          <h2 className="font-serif text-4xl text-moonberry-brown">Product not found</h2>
-          <p className="mt-3 text-moonberry-mauve">
-            This product is unavailable or not published in Shopify.
-          </p>
-          <Link
-            to="/shop"
-            className="mt-6 inline-flex rounded-full bg-moonberry-brown px-6 py-3 text-sm uppercase tracking-[0.12em] text-white"
-          >
-            Back to Shop
-          </Link>
-        </div>
+      <main className="page-main">
+        <EmptyState
+          eyebrow="Shop"
+          title="Product not found"
+          description="This product is unavailable or not published."
+          action={
+            <Link to="/shop" className="btn-primary">
+              Back to Shop
+            </Link>
+          }
+        />
       </main>
     )
   }
@@ -443,50 +420,54 @@ export function ProductPage({ onQuickAdd, products = [] }) {
   }
 
   return (
-    <main className="section-shell pb-28 pt-16 md:pb-16">
-      <p className="mb-5 text-sm text-moonberry-mauve">
-        <Link to="/" className="hover:text-moonberry-brown">Home</Link> /{' '}
-        <Link to="/shop" className="hover:text-moonberry-brown">Shop</Link> /{' '}
-        <span className="text-moonberry-brown">{product.name}</span>
-      </p>
-      <div className="grid gap-8 lg:grid-cols-2">
+    <main className="page-main pb-28 md:pb-20">
+      <Breadcrumbs
+        items={[
+          { label: 'Home', to: '/' },
+          { label: 'Shop', to: '/shop' },
+          { label: product.name },
+        ]}
+      />
+      <div className="grid gap-10 lg:grid-cols-2 lg:gap-14">
         <div>
-          <img src={activeImage} alt={product.name} className="h-[620px] w-full rounded-3xl object-cover" />
-          <div className="mt-4 grid grid-cols-2 gap-3">
-            {product.images.map((image) => (
-              <button
-                key={image}
-                type="button"
-                className={`overflow-hidden rounded-2xl border-2 transition ${
-                  activeImage === image ? 'border-moonberry-brown' : 'border-transparent'
-                }`}
-                onClick={() =>
-                  setSelection((prev) => ({
-                    ...prev,
-                    slug: product.slug,
-                    activeImage: image,
-                  }))
-                }
-              >
-                <img src={image} alt={product.name} className="h-40 w-full object-cover" />
-              </button>
-            ))}
-          </div>
+          <img src={activeImage} alt={product.name} className="product-gallery-main" />
+          {product.images.length > 1 ? (
+            <div className="mt-4 grid grid-cols-4 gap-3">
+              {product.images.map((image) => (
+                <button
+                  key={image}
+                  type="button"
+                  className={`overflow-hidden rounded-xl border-2 transition ${
+                    activeImage === image ? 'border-moonberry-brown' : 'border-transparent opacity-80 hover:opacity-100'
+                  }`}
+                  onClick={() =>
+                    setSelection((prev) => ({
+                      ...prev,
+                      slug: product.slug,
+                      activeImage: image,
+                    }))
+                  }
+                >
+                  <img src={image} alt={product.name} className="aspect-square w-full object-cover" />
+                </button>
+              ))}
+            </div>
+          ) : null}
         </div>
-        <div className="rounded-3xl bg-white/75 p-8">
-          <p className="text-xs uppercase tracking-[0.2em] text-moonberry-mauve">{product.collection}</p>
-          <h1 className="mt-2 font-serif text-5xl leading-none">{product.name}</h1>
-          <div className="mt-4 flex items-end gap-3">
-            <p className="text-2xl">{formatINR(displayPrice)}</p>
+        <div className="product-info-panel">
+          <p className="eyebrow">{product.collection}</p>
+          <h1 className="mt-2 font-serif text-4xl leading-[1.02] text-moonberry-brown md:text-5xl">{product.name}</h1>
+          <div className="mt-6 flex items-end gap-3 border-b border-moonberry-rose/15 pb-6">
+            <p className="price-display">{formatINR(displayPrice)}</p>
             {hasDiscount ? (
               <p className="text-sm text-moonberry-mauve line-through">{formatINR(displayCompare)}</p>
             ) : null}
           </div>
           {hasDiscount ? (
-            <p className="mt-1 text-sm text-green-700">You save {formatINR(savings)} on this item</p>
+            <p className="mt-3 text-sm text-moonberry-rose">You save {formatINR(savings)}</p>
           ) : null}
-          <p className="mt-1 text-sm text-moonberry-mauve">Inclusive of estimated GST</p>
-          <p className="mt-4 text-moonberry-mauve">{product.description}</p>
+          <p className="mt-2 text-sm text-moonberry-mauve">Inclusive of estimated GST</p>
+          <p className="mt-6 leading-relaxed text-moonberry-mauve">{product.description}</p>
           <div className="mt-4 flex items-center gap-2">
             {product.shadeHex?.map((shade) => (
               <span
@@ -498,8 +479,9 @@ export function ProductPage({ onQuickAdd, products = [] }) {
             ))}
           </div>
 
-          <div className="mt-6">
-            <p className="mb-2 text-sm uppercase tracking-[0.12em] text-moonberry-mauve">Option</p>
+          {product.sizes.length > 1 || (product.sizes[0] && product.sizes[0] !== 'Standard') ? (
+          <div className="mt-8">
+            <p className="mb-3 text-[11px] uppercase tracking-[0.16em] text-moonberry-mauve">Select option</p>
             <div className="flex flex-wrap gap-2">
               {product.sizes.map((size) => (
                 <button
@@ -512,82 +494,57 @@ export function ProductPage({ onQuickAdd, products = [] }) {
                       selectedSize: size,
                     }))
                   }
-                  className={`rounded-full border px-4 py-2 text-sm ${selectedSize === size ? 'border-moonberry-brown bg-moonberry-brown text-white' : 'border-moonberry-rose/60'}`}
+                  className={`filter-pill ${selectedSize === size ? 'filter-pill-active' : ''}`}
                 >
                   {size}
                 </button>
               ))}
             </div>
           </div>
+          ) : null}
           <button
             type="button"
-            className="mt-8 w-full rounded-full bg-moonberry-brown px-6 py-3 text-sm uppercase tracking-[0.15em] text-white"
+            className="btn-primary mt-8 w-full"
             onClick={handleAddToCart}
           >
             Add to Cart
           </button>
-          <div className="mt-3 grid gap-3 rounded-2xl border border-moonberry-rose/30 bg-white/90 p-4 text-sm text-moonberry-brown sm:grid-cols-2">
-            <span>UPI / Cards / Wallets</span>
-            <span>COD on eligible PIN codes</span>
-          </div>
-
-          <div className="mt-4 rounded-2xl border border-moonberry-rose/30 p-4">
-            <p className="text-sm font-medium text-moonberry-brown">Check delivery by PIN code</p>
-            <div className="mt-3 flex flex-col gap-2 sm:flex-row">
-              <input
-                value={pincode}
-                onChange={(event) => {
-                  setPincode(event.target.value.replace(/\D/g, '').slice(0, 6))
-                  setDeliveryMessage('')
-                }}
-                placeholder="Enter 6-digit PIN code"
-                className="h-11 flex-1 rounded-xl border border-moonberry-rose/40 px-4 outline-none"
-              />
-              <button
-                type="button"
-                className="h-11 rounded-xl bg-moonberry-brown px-5 text-sm uppercase tracking-widest text-white"
-                onClick={() => {
-                  if (pincode.length !== 6) {
-                    setDeliveryMessage('Please enter a valid 6-digit PIN code.')
-                    return
-                  }
-                  setDeliveryMessage('Delivery in 2-5 days. COD is available for this area.')
-                }}
-              >
-                Check
-              </button>
-            </div>
-            {deliveryMessage ? <p className="mt-2 text-sm text-moonberry-mauve">{deliveryMessage}</p> : null}
-          </div>
 
           <div className="mt-8 space-y-3">
-            <details open className="rounded-2xl border border-moonberry-rose/30 p-4">
-              <summary className="cursor-pointer font-medium">Product Details</summary>
-              <p className="mt-2 text-sm text-moonberry-mauve">Premium formulation with focus on skin compatibility, finish, and longevity.</p>
-            </details>
-            <details open className="rounded-2xl border border-moonberry-rose/30 p-4">
-              <summary className="cursor-pointer font-medium">Fragrance Notes / Key Ingredients</summary>
-              <div className="mt-2 flex flex-wrap gap-2">
-                {product.notes?.map((note) => (
-                  <span
-                    key={note}
-                    className="rounded-full bg-moonberry-cream px-3 py-1 text-xs tracking-wide text-moonberry-brown"
-                  >
-                    {note}
-                  </span>
-                ))}
-              </div>
-            </details>
-            <details className="rounded-2xl border border-moonberry-rose/30 p-4">
-              <summary className="cursor-pointer font-medium">Shipping & Returns</summary>
-              <p className="mt-2 text-sm text-moonberry-mauve">Free shipping above Rs. 999. Easy 7-day returns.</p>
+            {product.notes?.length ? (
+              <details className="accordion-luxury">
+                <summary className="cursor-pointer list-none font-medium text-moonberry-brown [&::-webkit-details-marker]:hidden">
+                  Key ingredients &amp; notes
+                </summary>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {product.notes.map((note) => (
+                    <span
+                      key={note}
+                      className="rounded-full bg-moonberry-cream px-3 py-1 text-xs tracking-wide text-moonberry-brown"
+                    >
+                      {note}
+                    </span>
+                  ))}
+                </div>
+              </details>
+            ) : null}
+            <details className="accordion-luxury">
+              <summary className="cursor-pointer list-none font-medium text-moonberry-brown [&::-webkit-details-marker]:hidden">
+                Shipping &amp; returns
+              </summary>
+              <p className="mt-2 text-sm text-moonberry-mauve">
+                Free shipping above Rs. 999. Easy 7-day returns.{' '}
+                <Link to="/shipping-returns" className="text-moonberry-brown underline underline-offset-2">
+                  Read full policy
+                </Link>
+              </p>
             </details>
           </div>
         </div>
       </div>
 
-      <section className="pt-16">
-        <SectionHeading eyebrow="Related Products" title="You May Also Like" />
+      <section className="mt-24 border-t border-moonberry-rose/15 pt-20">
+        <SectionHeading eyebrow="Complete the ritual" title="You May Also Like" />
         <div className="grid gap-5 md:grid-cols-3">
           {products
             .filter((item) => item.id !== product.id)
@@ -598,12 +555,8 @@ export function ProductPage({ onQuickAdd, products = [] }) {
         </div>
       </section>
 
-      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-moonberry-rose/30 bg-white/95 p-3 backdrop-blur md:hidden">
-        <button
-          type="button"
-          className="w-full rounded-full bg-moonberry-brown px-6 py-3 text-sm uppercase tracking-[0.15em] text-white"
-          onClick={handleAddToCart}
-        >
+      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-moonberry-rose/20 bg-white/95 p-3 backdrop-blur-xl md:hidden">
+        <button type="button" className="btn-primary w-full" onClick={handleAddToCart}>
           Add to Cart · {formatINR(displayPrice)}
         </button>
       </div>
@@ -613,20 +566,22 @@ export function ProductPage({ onQuickAdd, products = [] }) {
 
 export function AboutPage() {
   return (
-    <main className="section-shell py-16">
-      <SectionHeading eyebrow="About Moonberry" title="Modern beauty with timeless intent." />
-      <div className="grid gap-6 md:grid-cols-2">
-        <img src="https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?auto=format&fit=crop&w=1300&q=80" alt="Moonberry beauty products" className="h-[520px] w-full rounded-3xl object-cover" />
-        <div className="rounded-3xl bg-white/75 p-8 text-moonberry-mauve">
-          <p>
-            Moonberry is a boutique beauty label where fragrance, skin, and nail rituals meet.
-            We formulate intentionally with rich textures and refined scents that feel quietly luxurious.
-          </p>
-          <p className="mt-4">
-            Our design language draws from dusk hues, soft minimalism, and confidence through subtle detail.
-          </p>
-        </div>
-      </div>
+    <main className="page-main">
+      <PageHero
+        eyebrow="About Moonberry"
+        title="Modern beauty with timeless intent."
+        description="A boutique label where fragrance, skin, and nail rituals meet quiet luxury."
+      />
+      <ProseArticle>
+        <p>
+          Moonberry is a boutique beauty label where fragrance, skin, and nail rituals meet.
+          We formulate intentionally with rich textures and refined scents that feel quietly luxurious.
+        </p>
+        <p>
+          Our design language draws from dusk hues, soft minimalism, and confidence through subtle detail —
+          beauty that feels calm, confident, and exquisitely modern.
+        </p>
+      </ProseArticle>
     </main>
   )
 }
@@ -637,28 +592,31 @@ export function ContactPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   return (
-    <main className="section-shell py-16">
-      <SectionHeading eyebrow="Contact" title="We'd love to hear from you." />
-      <div className="grid gap-6 md:grid-cols-2">
-        <div className="rounded-3xl bg-white/80 p-8">
-          <p className="mb-5 text-moonberry-mauve">For beauty consultations, wholesale, and customer support inquiries.</p>
-          <p>
-            Email:{' '}
-            <a href={`mailto:${CONTACT_EMAIL}`} className="text-moonberry-brown underline underline-offset-2">
+    <main className="page-main">
+      <PageHero
+        eyebrow="Contact"
+        title="We'd love to hear from you."
+        description="For beauty consultations, wholesale, and customer support inquiries."
+      />
+      <div className="grid gap-8 lg:grid-cols-[0.9fr_1.1fr]">
+        <div className="space-y-4">
+          <ContactCard icon={Mail} label="Email">
+            <a href={`mailto:${CONTACT_EMAIL}`} className="underline underline-offset-[3px] transition hover:text-moonberry-rose">
               {CONTACT_EMAIL}
             </a>
-          </p>
-          <p className="mt-2">
-            Phone:{' '}
-            <a href={`tel:${CONTACT_PHONE.replace(/\s/g, '')}`} className="text-moonberry-brown">
-              {CONTACT_PHONE}
-            </a>
-          </p>
-          <p className="mt-2">Studio: {CONTACT_ADDRESS}</p>
+          </ContactCard>
+          {HAS_CONTACT_PHONE ? (
+            <ContactCard icon={Phone} label="Phone">
+              <a href={`tel:${CONTACT_PHONE.replace(/\s/g, '')}`} className="transition hover:text-moonberry-rose">
+                {CONTACT_PHONE}
+              </a>
+            </ContactCard>
+          ) : null}
+          <ContactCard icon={MapPin} label="Studio">
+            {CONTACT_ADDRESS}
+          </ContactCard>
         </div>
-        <form
-          className="rounded-3xl bg-white/80 p-8"
-          onSubmit={(event) => {
+        <form className="card-surface p-8 md:p-10" onSubmit={(event) => {
             event.preventDefault()
             if (!form.name.trim() || !form.email.includes('@') || form.message.trim().length < 10) {
               setFormStatus({
@@ -681,7 +639,7 @@ export function ContactPage() {
             setIsSubmitting(false)
           }}
         >
-          <div className="space-y-3">
+          <div className="space-y-4">
             <input
               placeholder="Full Name"
               value={form.name}
@@ -689,7 +647,7 @@ export function ContactPage() {
                 setForm((prev) => ({ ...prev, name: event.target.value }))
                 setFormStatus({ type: '', message: '' })
               }}
-              className="h-12 w-full rounded-2xl border border-moonberry-rose/40 bg-white px-4 outline-none"
+              className="input-field"
             />
             <input
               placeholder="Email Address"
@@ -698,24 +656,20 @@ export function ContactPage() {
                 setForm((prev) => ({ ...prev, email: event.target.value }))
                 setFormStatus({ type: '', message: '' })
               }}
-              className="h-12 w-full rounded-2xl border border-moonberry-rose/40 bg-white px-4 outline-none"
+              className="input-field"
             />
             <textarea
-              placeholder="Message"
+              placeholder="Your message"
               rows={5}
               value={form.message}
               onChange={(event) => {
                 setForm((prev) => ({ ...prev, message: event.target.value }))
                 setFormStatus({ type: '', message: '' })
               }}
-              className="w-full rounded-2xl border border-moonberry-rose/40 bg-white p-4 outline-none"
+              className="textarea-field"
             />
           </div>
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="mt-4 rounded-full bg-moonberry-brown px-7 py-3 text-sm uppercase tracking-[0.15em] text-white disabled:cursor-not-allowed disabled:opacity-60"
-          >
+          <button type="submit" disabled={isSubmitting} className="btn-primary mt-6 disabled:opacity-60">
             {isSubmitting ? 'Sending...' : 'Send Message'}
           </button>
           {formStatus.message ? (
@@ -765,8 +719,7 @@ const INDIAN_STATES = [
   'West Bengal',
 ]
 
-const checkoutInputClass =
-  'h-12 w-full rounded-2xl border border-moonberry-rose/40 bg-white px-4 text-moonberry-brown outline-none focus:border-moonberry-brown/50'
+const checkoutInputClass = 'input-field'
 
 export function CheckoutPage({
   cartItems = [],
@@ -859,23 +812,20 @@ export function CheckoutPage({
 
   if (phase === 'complete') {
     return (
-      <main className="section-shell py-16 md:py-20">
-        <div className="mx-auto max-w-xl rounded-3xl bg-white/85 p-10 text-center shadow-[0_12px_40px_rgba(74,59,61,0.08)] md:p-12">
-          <CheckCircle2 className="mx-auto text-green-700" size={48} aria-hidden />
-          <h1 className="mt-6 font-serif text-3xl text-moonberry-brown">Thank you for your order</h1>
-          <p className="mt-3 text-moonberry-mauve">
-            Your order <span className="font-medium text-moonberry-brown">{orderNumber}</span> is confirmed.
-            We will email updates to {email}.
+      <main className="page-main">
+        <div className="empty-state">
+          <CheckCircle2 className="mx-auto text-moonberry-rose" size={52} aria-hidden />
+          <h1 className="mt-6 font-serif text-3xl text-moonberry-brown md:text-4xl">Thank you for your order</h1>
+          <p className="mt-4 text-moonberry-mauve">
+            Order <span className="font-medium text-moonberry-brown">{orderNumber}</span> is confirmed.
+            Updates will be sent to {email}.
           </p>
           <p className="mt-2 text-sm text-moonberry-mauve">
             {paymentMethod === 'cod'
               ? 'Pay when your package arrives.'
-              : 'Complete payment on Shopify’s secure page, then you’ll receive a confirmation email.'}
+              : 'Complete payment on the secure checkout page to confirm.'}
           </p>
-          <Link
-            to="/shop"
-            className="mt-8 inline-flex rounded-full bg-moonberry-brown px-7 py-3 text-sm uppercase tracking-[0.15em] text-white"
-          >
+          <Link to="/shop" className="btn-primary mt-8">
             Continue shopping
           </Link>
         </div>
@@ -884,11 +834,11 @@ export function CheckoutPage({
   }
 
   return (
-    <main className="section-shell py-12 md:py-16">
-      <SectionHeading
+    <main className="page-main">
+      <PageHero
         eyebrow="Checkout"
         title="Complete your order"
-        description="Contact, delivery, and payment — all on Moonberry. No redirects."
+        description="A refined checkout experience — contact, delivery, and payment in one place."
       />
 
       {defaultEmail ? (
@@ -902,31 +852,29 @@ export function CheckoutPage({
           className="mb-8 rounded-2xl border border-amber-300/80 bg-amber-50/95 p-5 text-sm text-amber-950"
           role="alert"
         >
-          <p className="font-medium">Checkout is not ready on the server yet.</p>
+          <p className="font-medium">Checkout is temporarily unavailable.</p>
           <p className="mt-2 leading-relaxed">
-            Add <code className="rounded bg-white/80 px-1">SHOPIFY_CLIENT_ID</code> and{' '}
-            <code className="rounded bg-white/80 px-1">SHOPIFY_CLIENT_SECRET</code> from the Shopify Dev
-            Dashboard to your <code className="rounded bg-white/80 px-1">.env</code> (or Vercel), then restart
-            the dev server. Run <code className="rounded bg-white/80 px-1">npm run check:env</code> to verify.
+            {import.meta.env.DEV
+              ? 'Add Shopify Admin API credentials to your .env and restart the dev server. Run npm run check:env to verify.'
+              : 'Please try again later or contact us for help placing your order.'}
           </p>
         </div>
       ) : null}
 
       {cartItems.length === 0 ? (
-        <div className="mx-auto max-w-xl rounded-3xl bg-white/75 p-10 text-center">
-          <p className="text-moonberry-brown">Your bag is empty.</p>
-          <Link
-            to="/shop"
-            className="mt-6 inline-flex rounded-full bg-moonberry-brown px-7 py-3 text-sm uppercase tracking-[0.15em] text-white"
-          >
-            Browse the shop
-          </Link>
-        </div>
+        <EmptyState
+          title="Your bag is empty"
+          description="Add something beautiful before checking out."
+          action={
+            <Link to="/shop" className="btn-primary">
+              Browse the shop
+            </Link>
+          }
+        />
       ) : (
-        <form onSubmit={handlePlaceOrder} className="grid gap-8 lg:grid-cols-[1.15fr_0.85fr] lg:items-start">
+        <form onSubmit={handlePlaceOrder} className="grid gap-10 lg:grid-cols-[1.15fr_0.85fr] lg:items-start">
           <div className="space-y-6">
-            <section className="rounded-3xl bg-white/75 p-6 md:p-8">
-              <h2 className="font-serif text-xl text-moonberry-brown">Items in your bag</h2>
+            <CheckoutSection step="1" title="Your bag">
               <div className="mt-4 space-y-4">
                 {cartItems.map((item) => (
                   <div
@@ -968,10 +916,9 @@ export function CheckoutPage({
                   </div>
                 ))}
               </div>
-            </section>
+            </CheckoutSection>
 
-            <section className="rounded-3xl bg-white/75 p-6 md:p-8">
-              <h2 className="font-serif text-xl text-moonberry-brown">Contact</h2>
+            <CheckoutSection step="2" title="Contact">
               <div className="mt-4 grid gap-3 sm:grid-cols-2">
                 <div className="sm:col-span-2">
                   <label className="mb-1 block text-xs uppercase tracking-[0.14em] text-moonberry-mauve">Email</label>
@@ -997,10 +944,9 @@ export function CheckoutPage({
                   />
                 </div>
               </div>
-            </section>
+            </CheckoutSection>
 
-            <section className="rounded-3xl bg-white/75 p-6 md:p-8">
-              <h2 className="font-serif text-xl text-moonberry-brown">Delivery address</h2>
+            <CheckoutSection step="3" title="Delivery address">
               <div className="mt-4 grid gap-3 sm:grid-cols-2">
                 <div className="sm:col-span-2">
                   <label className="mb-1 block text-xs uppercase tracking-[0.14em] text-moonberry-mauve">
@@ -1080,10 +1026,9 @@ export function CheckoutPage({
                   />
                 </div>
               </div>
-            </section>
+            </CheckoutSection>
 
-            <section className="rounded-3xl bg-white/75 p-6 md:p-8">
-              <h2 className="font-serif text-xl text-moonberry-brown">Payment</h2>
+            <CheckoutSection step="4" title="Payment">
               <div className="mt-4 flex flex-wrap gap-2">
                 {[
                   { id: 'cod', label: 'Cash on delivery' },
@@ -1093,11 +1038,7 @@ export function CheckoutPage({
                     key={option.id}
                     type="button"
                     onClick={() => setPaymentMethod(option.id)}
-                    className={`rounded-full border px-4 py-2 text-sm transition ${
-                      paymentMethod === option.id
-                        ? 'border-moonberry-brown bg-moonberry-brown text-white'
-                        : 'border-moonberry-rose/40 text-moonberry-brown hover:bg-moonberry-cream/60'
-                    }`}
+                    className={`filter-pill ${paymentMethod === option.id ? 'filter-pill-active' : ''}`}
                   >
                     {option.label}
                   </button>
@@ -1114,12 +1055,13 @@ export function CheckoutPage({
                   methods enabled in your store. Address and contact stay on Moonberry.
                 </p>
               )}
-            </section>
+            </CheckoutSection>
           </div>
 
           <aside className="lg:sticky lg:top-28">
-            <div className="rounded-3xl bg-white/85 p-6 shadow-[0_12px_40px_rgba(74,59,61,0.08)] md:p-8">
-              <h3 className="font-serif text-2xl text-moonberry-brown">Order summary</h3>
+            <div className="card-surface p-6 md:p-8">
+              <p className="eyebrow">Summary</p>
+              <h3 className="font-serif text-2xl text-moonberry-brown">Order total</h3>
 
               <div className="mt-6 space-y-2 border-b border-moonberry-rose/25 pb-6 text-sm">
                 <div className="flex justify-between">
@@ -1149,7 +1091,7 @@ export function CheckoutPage({
               <button
                 type="submit"
                 disabled={busy || codReady !== true}
-                className="mt-6 w-full rounded-full bg-moonberry-brown px-6 py-3.5 text-sm uppercase tracking-[0.15em] text-white transition hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-50"
+                className="btn-primary mt-6 w-full disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {busy
                   ? 'Placing order…'
@@ -1159,8 +1101,7 @@ export function CheckoutPage({
               </button>
 
               <p className="mt-4 text-center text-[11px] leading-relaxed text-moonberry-mauve">
-                All payments run through Shopify — cash on delivery or online via Shopify Payments. No third-party
-                payment gateway.
+                Cash on delivery or pay online via Shopify.
               </p>
 
               <Link
@@ -1179,11 +1120,9 @@ export function CheckoutPage({
 
 function StaticArticle({ eyebrow, title, children }) {
   return (
-    <main className="section-shell py-16">
-      <SectionHeading eyebrow={eyebrow} title={title} />
-      <article className="mx-auto max-w-3xl space-y-5 text-[15px] leading-relaxed text-moonberry-mauve md:text-base">
-        {children}
-      </article>
+    <main className="page-main">
+      <PageHero eyebrow={eyebrow} title={title} />
+      <ProseArticle>{children}</ProseArticle>
     </main>
   )
 }
@@ -1300,17 +1239,18 @@ export function TermsPage() {
 
 export function FaqPage() {
   return (
-    <main className="section-shell py-16">
-      <SectionHeading
+    <main className="page-main">
+      <PageHero
         eyebrow="Help"
         title="Frequently asked questions"
         description="Quick answers about orders, delivery, and shopping with Moonberry."
+        align="center"
       />
-      <div className="mx-auto max-w-3xl space-y-4">
-        {[
+      <LuxeAccordion
+        items={[
           {
             q: 'How do I pay?',
-            a: 'Add items to your bag, go to Checkout on this site, enter your delivery details, and pay with cash on delivery, UPI, or card — all without leaving MoonBerry.',
+            a: 'Add items to your bag, go to Checkout, enter your delivery details, and pay with cash on delivery, UPI, or card.',
           },
           {
             q: 'Do you ship all over India?',
@@ -1318,25 +1258,17 @@ export function FaqPage() {
           },
           {
             q: 'How do I track my order?',
-            a: 'You will receive order and shipping updates by email. Paid orders also appear in Shopify Admin for fulfillment.',
+            a: 'You will receive order and shipping updates by email once your order is placed and dispatched.',
           },
           {
             q: 'Can I return a product?',
             a: 'See our Shipping & returns page for eligibility and how to request a return within the stated window.',
           },
-        ].map((item) => (
-          <details
-            key={item.q}
-            className="group rounded-2xl border border-moonberry-rose/30 bg-white/75 p-5 open:bg-white/90"
-          >
-            <summary className="cursor-pointer font-medium text-moonberry-brown">{item.q}</summary>
-            <p className="mt-3 text-sm text-moonberry-mauve">{item.a}</p>
-          </details>
-        ))}
-      </div>
-      <p className="mx-auto mt-10 max-w-3xl text-center text-sm text-moonberry-mauve">
+        ]}
+      />
+      <p className="mx-auto mt-12 max-w-3xl text-center text-sm text-moonberry-mauve">
         Still need help?{' '}
-        <Link to="/contact" className="text-moonberry-brown underline underline-offset-2">
+        <Link to="/contact" className="text-moonberry-brown underline underline-offset-[3px]">
           Contact us
         </Link>
         .
@@ -1347,26 +1279,22 @@ export function FaqPage() {
 
 export function NotFoundPage() {
   return (
-    <main className="section-shell py-24 text-center">
-      <p className="text-xs uppercase tracking-[0.28em] text-moonberry-mauve">404</p>
-      <h1 className="mt-3 font-serif text-5xl text-moonberry-brown">Page not found</h1>
-      <p className="mx-auto mt-4 max-w-md text-moonberry-mauve">
-        The link may be broken or the page may have moved. Try the shop or head back home.
-      </p>
-      <div className="mt-10 flex flex-wrap justify-center gap-3">
-        <Link
-          to="/"
-          className="rounded-full bg-moonberry-brown px-8 py-3 text-sm uppercase tracking-[0.12em] text-white"
-        >
-          Home
-        </Link>
-        <Link
-          to="/shop"
-          className="rounded-full border border-moonberry-rose/50 px-8 py-3 text-sm uppercase tracking-[0.12em] text-moonberry-brown"
-        >
-          Shop
-        </Link>
-      </div>
+    <main className="page-main">
+      <EmptyState
+        eyebrow="404"
+        title="Page not found"
+        description="The link may be broken or the page may have moved."
+        action={
+          <div className="flex flex-wrap justify-center gap-3">
+            <Link to="/" className="btn-primary">
+              Home
+            </Link>
+            <Link to="/shop" className="btn-secondary">
+              Shop
+            </Link>
+          </div>
+        }
+      />
     </main>
   )
 }

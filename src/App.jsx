@@ -3,12 +3,14 @@ import { Route, Routes, useLocation, useNavigate, useParams } from 'react-router
 import { CheckCircle2, X } from 'lucide-react'
 import {
   CartDrawer,
+  CatalogSkeleton,
   Footer,
   IndiaTrustBar,
   MobileMenu,
   Navbar,
   SearchModal,
 } from './components/Layout'
+import { EmptyState } from './components/PageElements'
 import {
   addCartLine,
   createCart,
@@ -610,36 +612,23 @@ function App() {
 
       <main id="main-content" key={location.pathname} className="animate-[fadeIn_420ms_ease-out]">
         {!catalogLoaded ? (
-          <div className="section-shell py-20">
-            <p className="text-center text-moonberry-mauve">Loading catalog...</p>
-          </div>
+          <CatalogSkeleton />
         ) : catalogError && !allowWithCatalogError ? (
-          <div className="section-shell py-20">
-            <div className="mx-auto max-w-2xl rounded-3xl border border-moonberry-rose/30 bg-white/70 p-8 text-center">
-              <p className="text-lg text-moonberry-brown">{catalogError}</p>
-              <p className="mt-2 text-sm text-moonberry-mauve">
-                Set `VITE_SHOPIFY_STORE_DOMAIN` and `VITE_SHOPIFY_STOREFRONT_TOKEN` to continue.
-              </p>
-              <p className="mt-4 text-sm text-moonberry-mauve">
-                You can still{' '}
-                <button
-                  type="button"
-                  className="text-moonberry-brown underline underline-offset-2"
-                  onClick={() => navigate('/login')}
-                >
-                  log in
-                </button>{' '}
-                or{' '}
-                <button
-                  type="button"
-                  className="text-moonberry-brown underline underline-offset-2"
-                  onClick={() => navigate('/signup')}
-                >
-                  sign up
-                </button>
-                .
-              </p>
-            </div>
+          <div className="page-main">
+            <EmptyState
+              title="Our store is updating"
+              description="Please check back soon. You can still sign in or reach out if you need help."
+              action={
+                <div className="flex flex-wrap justify-center gap-3">
+                  <button type="button" className="btn-secondary" onClick={() => navigate('/login')}>
+                    Log in
+                  </button>
+                  <button type="button" className="btn-primary" onClick={() => navigate('/contact')}>
+                    Contact us
+                  </button>
+                </div>
+              }
+            />
           </div>
         ) : (
         <Routes>

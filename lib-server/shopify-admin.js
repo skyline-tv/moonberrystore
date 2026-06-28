@@ -1,7 +1,7 @@
 import { getServerConfig } from './env.js'
-import { resolveAdminAccessToken } from './shopify-admin-auth.js'
+import { clearAdminTokenCache, resolveAdminAccessToken } from './shopify-admin-auth.js'
 
-async function adminRequest(query, variables = {}) {
+async function adminRequest(query, variables = {}, { retried = false } = {}) {
   const { storeDomain, apiVersion, hasAdmin } = getServerConfig()
   if (!hasAdmin) {
     throw new Error(
@@ -26,7 +26,18 @@ async function adminRequest(query, variables = {}) {
 
   const json = await response.json()
   if (json.errors?.length) {
-    throw new Error(json.errors[0]?.message || 'Shopify Admin GraphQL error.')
+    const message = json.errors[0]?.message || 'Shopify Admin GraphQL error.'
+    const needsDraftScope = /write_draft_orders|write_quick_sale/i.test(message)
+    if (!retried && needsDraftScope) {
+      clearAdminTokenCache()
+      return adminRequest(query, variables, { retried: true })
+    }
+    if (needsDraftScope) {
+      throw new Error(
+        `${message} Release a new app version with write_draft_orders, then in Shopify Admin open Settings → Apps → Moonberry Checkout and approve the updated permissions.`,
+      )
+    }
+    throw new Error(message)
   }
   return json.data
 }
