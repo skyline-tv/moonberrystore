@@ -19,7 +19,7 @@ export default defineConfig(({ mode }) => {
   const apiVersion = env.VITE_SHOPIFY_API_VERSION || '2025-01'
 
   return {
-    plugins: [react(), tailwindcss(), moonberryApiDevPlugin()],
+    plugins: [react(), tailwindcss(), moonberryApiDevPlugin(env)],
     server: {
       proxy: storeDomain
         ? {

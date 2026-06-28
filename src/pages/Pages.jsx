@@ -4,8 +4,10 @@ import { CheckCircle2 } from 'lucide-react'
 import { testimonials } from '../data/mockData'
 import { ProductCard, SectionHeading } from '../components/ProductCard'
 import { formatINR } from '../lib/currency'
+import { calculateOrderTotals } from '../lib/pricing'
+import { fetchCheckoutReadiness } from '../lib/checkoutApi'
 import { getCollectionByHandle, hasShopifyConfig, pickVariantForOption } from '../lib/shopify'
-import { hasRazorpayClientKey } from '../lib/razorpayCheckout'
+import { CONTACT_ADDRESS, CONTACT_EMAIL, CONTACT_PHONE } from '../lib/site'
 
 export function HomePage({ onQuickAdd, products = [], collections = [] }) {
   const bestSellers = products.filter((item) => item.bestSeller)
@@ -640,13 +642,23 @@ export function ContactPage() {
       <div className="grid gap-6 md:grid-cols-2">
         <div className="rounded-3xl bg-white/80 p-8">
           <p className="mb-5 text-moonberry-mauve">For beauty consultations, wholesale, and customer support inquiries.</p>
-          <p>Email: moonberry.bussness@gmail.com</p>
-          <p className="mt-2">Phone: 90000000000</p>
-          <p className="mt-2">Studio: Ulhasnagar 3, Thane, Mumbai, Maharashtra, India</p>
+          <p>
+            Email:{' '}
+            <a href={`mailto:${CONTACT_EMAIL}`} className="text-moonberry-brown underline underline-offset-2">
+              {CONTACT_EMAIL}
+            </a>
+          </p>
+          <p className="mt-2">
+            Phone:{' '}
+            <a href={`tel:${CONTACT_PHONE.replace(/\s/g, '')}`} className="text-moonberry-brown">
+              {CONTACT_PHONE}
+            </a>
+          </p>
+          <p className="mt-2">Studio: {CONTACT_ADDRESS}</p>
         </div>
         <form
           className="rounded-3xl bg-white/80 p-8"
-          onSubmit={async (event) => {
+          onSubmit={(event) => {
             event.preventDefault()
             if (!form.name.trim() || !form.email.includes('@') || form.message.trim().length < 10) {
               setFormStatus({
@@ -656,10 +668,14 @@ export function ContactPage() {
               return
             }
             setIsSubmitting(true)
-            await new Promise((resolve) => setTimeout(resolve, 700))
+            const subject = encodeURIComponent(`MoonBerry inquiry from ${form.name.trim()}`)
+            const body = encodeURIComponent(
+              `Name: ${form.name.trim()}\nEmail: ${form.email.trim()}\n\n${form.message.trim()}`,
+            )
+            window.location.href = `mailto:${CONTACT_EMAIL}?subject=${subject}&body=${body}`
             setFormStatus({
               type: 'success',
-              message: 'Thank you. Our team will reach out within 24 hours.',
+              message: 'Your email app should open with your message ready to send.',
             })
             setForm({ name: '', email: '', message: '' })
             setIsSubmitting(false)
@@ -760,11 +776,8 @@ export function CheckoutPage({
   onRefreshCart,
   defaultEmail = '',
 }) {
-  const freeShippingThreshold = 999
-  const subtotal = cartItems.reduce((sum, item) => sum + item.price * item.qty, 0)
-  const shipping = subtotal === 0 || subtotal >= freeShippingThreshold ? 0 : 99
-  const gst = Math.round(subtotal * 0.18)
-  const total = subtotal + shipping + gst
+  const totals = calculateOrderTotals(cartItems.map((item) => ({ price: item.price, qty: item.qty })))
+  const { subtotal, shipping, gst, total } = totals
 
   const [phase, setPhase] = useState('checkout')
   const [orderNumber, setOrderNumber] = useState('')
@@ -780,10 +793,25 @@ export function CheckoutPage({
   const [state, setState] = useState('Maharashtra')
   const [pincode, setPincode] = useState('')
   const [paymentMethod, setPaymentMethod] = useState('cod')
+  const [codReady, setCodReady] = useState(null)
 
   useEffect(() => {
     onRefreshCart?.()
   }, [onRefreshCart])
+
+  useEffect(() => {
+    let cancelled = false
+    fetchCheckoutReadiness()
+      .then((status) => {
+        if (!cancelled) setCodReady(Boolean(status.codReady))
+      })
+      .catch(() => {
+        if (!cancelled) setCodReady(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   const validateForm = () => {
     if (!email.includes('@')) return 'Enter a valid email address.'
@@ -792,9 +820,6 @@ export function CheckoutPage({
     if (addressLine1.trim().length < 5) return 'Enter your delivery address.'
     if (city.trim().length < 2) return 'Enter your city.'
     if (!/^\d{6}$/.test(pincode.trim())) return 'Enter a valid 6-digit PIN code.'
-    if ((paymentMethod === 'upi' || paymentMethod === 'card') && !hasRazorpayClientKey) {
-      return 'Online payment is not configured yet. Choose cash on delivery.'
-    }
     return ''
   }
 
@@ -821,6 +846,7 @@ export function CheckoutPage({
         paymentMethod,
         total,
       })
+      if (result?.redirected) return
       setOrderNumber(result?.orderNumber || '')
       setPhase('complete')
       window.scrollTo({ top: 0, behavior: 'smooth' })
@@ -844,7 +870,7 @@ export function CheckoutPage({
           <p className="mt-2 text-sm text-moonberry-mauve">
             {paymentMethod === 'cod'
               ? 'Pay when your package arrives.'
-              : 'Payment received. Our team will prepare your shipment shortly.'}
+              : 'Complete payment on Shopify’s secure page, then you’ll receive a confirmation email.'}
           </p>
           <Link
             to="/shop"
@@ -869,6 +895,21 @@ export function CheckoutPage({
         <p className="mb-6 text-sm text-moonberry-mauve">
           Signed in as <span className="text-moonberry-brown">{defaultEmail}</span>.
         </p>
+      ) : null}
+
+      {codReady === false ? (
+        <div
+          className="mb-8 rounded-2xl border border-amber-300/80 bg-amber-50/95 p-5 text-sm text-amber-950"
+          role="alert"
+        >
+          <p className="font-medium">Checkout is not ready on the server yet.</p>
+          <p className="mt-2 leading-relaxed">
+            Add <code className="rounded bg-white/80 px-1">SHOPIFY_CLIENT_ID</code> and{' '}
+            <code className="rounded bg-white/80 px-1">SHOPIFY_CLIENT_SECRET</code> from the Shopify Dev
+            Dashboard to your <code className="rounded bg-white/80 px-1">.env</code> (or Vercel), then restart
+            the dev server. Run <code className="rounded bg-white/80 px-1">npm run check:env</code> to verify.
+          </p>
+        </div>
       ) : null}
 
       {cartItems.length === 0 ? (
@@ -1045,16 +1086,14 @@ export function CheckoutPage({
               <h2 className="font-serif text-xl text-moonberry-brown">Payment</h2>
               <div className="mt-4 flex flex-wrap gap-2">
                 {[
-                  { id: 'cod', label: 'Cash on delivery', enabled: true },
-                  { id: 'upi', label: 'UPI', enabled: hasRazorpayClientKey },
-                  { id: 'card', label: 'Card', enabled: hasRazorpayClientKey },
+                  { id: 'cod', label: 'Cash on delivery' },
+                  { id: 'shopify', label: 'Pay online (UPI / card)' },
                 ].map((option) => (
                   <button
                     key={option.id}
                     type="button"
-                    disabled={!option.enabled}
                     onClick={() => setPaymentMethod(option.id)}
-                    className={`rounded-full border px-4 py-2 text-sm transition disabled:cursor-not-allowed disabled:opacity-45 ${
+                    className={`rounded-full border px-4 py-2 text-sm transition ${
                       paymentMethod === option.id
                         ? 'border-moonberry-brown bg-moonberry-brown text-white'
                         : 'border-moonberry-rose/40 text-moonberry-brown hover:bg-moonberry-cream/60'
@@ -1071,16 +1110,10 @@ export function CheckoutPage({
                 </p>
               ) : (
                 <p className="mt-4 text-sm text-moonberry-mauve">
-                  After you place the order, a secure Razorpay window opens on this page for UPI or card payment.
-                  No redirect to Shopify.
+                  After you place the order, you’ll open Shopify’s secure payment page for UPI, cards, and other
+                  methods enabled in your store. Address and contact stay on Moonberry.
                 </p>
               )}
-
-              {!hasRazorpayClientKey ? (
-                <p className="mt-3 text-xs text-moonberry-mauve">
-                  UPI and card require `VITE_RAZORPAY_KEY_ID` and server Razorpay secrets. COD works without them.
-                </p>
-              ) : null}
             </section>
           </div>
 
@@ -1115,14 +1148,19 @@ export function CheckoutPage({
 
               <button
                 type="submit"
-                disabled={busy}
+                disabled={busy || codReady !== true}
                 className="mt-6 w-full rounded-full bg-moonberry-brown px-6 py-3.5 text-sm uppercase tracking-[0.15em] text-white transition hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                {busy ? 'Placing order…' : 'Place order'}
+                {busy
+                  ? 'Placing order…'
+                  : paymentMethod === 'cod'
+                    ? 'Place order (COD)'
+                    : 'Place order & pay on Shopify'}
               </button>
 
               <p className="mt-4 text-center text-[11px] leading-relaxed text-moonberry-mauve">
-                Orders are created in Shopify from this form. UPI and card payments use Razorpay on this site.
+                All payments run through Shopify — cash on delivery or online via Shopify Payments. No third-party
+                payment gateway.
               </p>
 
               <Link
@@ -1170,11 +1208,10 @@ export function ShippingReturnsPage() {
       </p>
       <p>
         For return requests, email{' '}
-        <a href="mailto:moonberry.bussness@gmail.com" className="text-moonberry-brown underline underline-offset-2">
-          moonberry.bussness@gmail.com
+        <a href={`mailto:${CONTACT_EMAIL}`} className="text-moonberry-brown underline underline-offset-2">
+          {CONTACT_EMAIL}
         </a>{' '}
-        with your order number. Final return eligibility is confirmed at Shopify checkout and in your order
-        confirmation.
+        with your order number. Final return eligibility is confirmed in your order confirmation email.
       </p>
     </StaticArticle>
   )
@@ -1190,8 +1227,8 @@ export function PrivacyPolicyPage() {
       <h2 className="font-serif text-2xl text-moonberry-brown">What we collect</h2>
       <p>
         When you browse, create an account, or check out, we may process data such as your name, email, phone, shipping
-        address, and order history. Payment details are handled securely by Shopify; we do not store your full card
-        details on this storefront.
+        address, and order history. Online payments are processed by Shopify Payments; cash on delivery is collected at
+        delivery. We do not store your full card details on this site.
       </p>
       <h2 className="font-serif text-2xl text-moonberry-brown">Cookies & analytics</h2>
       <p>
@@ -1201,8 +1238,8 @@ export function PrivacyPolicyPage() {
       <h2 className="font-serif text-2xl text-moonberry-brown">Contact</h2>
       <p>
         Questions about privacy? Reach us at{' '}
-        <a href="mailto:moonberry.bussness@gmail.com" className="text-moonberry-brown underline underline-offset-2">
-          moonberry.bussness@gmail.com
+        <a href={`mailto:${CONTACT_EMAIL}`} className="text-moonberry-brown underline underline-offset-2">
+          {CONTACT_EMAIL}
         </a>
         .
       </p>
@@ -1273,7 +1310,7 @@ export function FaqPage() {
         {[
           {
             q: 'How do I pay?',
-            a: 'After you add items to your bag, go to checkout on this site, then continue to Shopify’s secure checkout to pay by card, UPI, or other methods your store supports.',
+            a: 'Add items to your bag, go to Checkout on this site, enter your delivery details, and pay with cash on delivery, UPI, or card — all without leaving MoonBerry.',
           },
           {
             q: 'Do you ship all over India?',
@@ -1281,7 +1318,7 @@ export function FaqPage() {
           },
           {
             q: 'How do I track my order?',
-            a: 'You will receive updates by email and SMS from Shopify once your order ships. Use the links in those messages for tracking.',
+            a: 'You will receive order and shipping updates by email. Paid orders also appear in Shopify Admin for fulfillment.',
           },
           {
             q: 'Can I return a product?',

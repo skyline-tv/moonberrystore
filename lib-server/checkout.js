@@ -1,8 +1,6 @@
 import { calculateOrderTotals } from './pricing.js'
-import { createRazorpayOrder, verifyRazorpayPayment } from './razorpay.js'
 import { completeDraftOrder, createDraftOrder } from './shopify-admin.js'
 import { fetchStorefrontCart } from './shopify-storefront.js'
-import { getServerConfig } from './env.js'
 
 function validateCustomer(customer) {
   if (!customer?.email?.includes('@')) throw new Error('Valid email is required.')
@@ -22,7 +20,7 @@ export async function handleCheckoutCreate(body) {
   const { cartId, customerAccessToken, customer, paymentMethod } = body || {}
 
   if (!cartId) throw new Error('Cart ID is required.')
-  if (!['cod', 'upi', 'card'].includes(paymentMethod)) {
+  if (!['cod', 'shopify'].includes(paymentMethod)) {
     throw new Error('Unsupported payment method.')
   }
 
@@ -52,60 +50,17 @@ export async function handleCheckoutCreate(body) {
     }
   }
 
-  const { hasRazorpay } = getServerConfig()
-  if (!hasRazorpay) {
-    throw new Error('Online payment is not configured yet. Use cash on delivery or add Razorpay keys.')
+  if (!draftOrder.invoiceUrl) {
+    throw new Error(
+      'Shopify payment link is not available. Enable Shopify Payments in Admin → Settings → Payments.',
+    )
   }
 
-  const razorpayOrder = await createRazorpayOrder({
-    amountInr: totals.total,
-    receipt: draftOrder.name,
-    notes: {
-      draft_order_id: draftOrder.id,
-      cart_id: cartId,
-      payment_method: paymentMethod,
-    },
-  })
-
   return {
-    status: 'payment_required',
-    paymentMethod,
+    status: 'shopify_payment',
+    paymentMethod: 'shopify',
     total: totals.total,
-    draftOrderId: draftOrder.id,
     draftOrderName: draftOrder.name,
-    razorpay: {
-      keyId: razorpayOrder.keyId,
-      orderId: razorpayOrder.id,
-      amount: razorpayOrder.amount,
-      currency: razorpayOrder.currency,
-      name: 'MoonBerry',
-      description: `Order ${draftOrder.name}`,
-      prefill: {
-        name: customer.fullName,
-        email: customer.email,
-        contact: customer.phone.replace(/\D/g, '').slice(-10),
-      },
-    },
-  }
-}
-
-export async function handleCheckoutVerify(body) {
-  const { draftOrderId, razorpayOrderId, razorpayPaymentId, razorpaySignature } = body || {}
-
-  if (!draftOrderId || !razorpayOrderId || !razorpayPaymentId || !razorpaySignature) {
-    throw new Error('Payment details are incomplete.')
-  }
-
-  verifyRazorpayPayment({
-    orderId: razorpayOrderId,
-    paymentId: razorpayPaymentId,
-    signature: razorpaySignature,
-  })
-
-  const order = await completeDraftOrder(draftOrderId, { paymentPending: false })
-  return {
-    status: 'completed',
-    orderNumber: order.name,
-    shopifyOrderId: order.legacyResourceId,
+    invoiceUrl: draftOrder.invoiceUrl,
   }
 }

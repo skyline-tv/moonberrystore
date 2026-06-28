@@ -1,12 +1,15 @@
 import { getServerConfig } from './env.js'
+import { resolveAdminAccessToken } from './shopify-admin-auth.js'
 
 async function adminRequest(query, variables = {}) {
-  const { storeDomain, adminToken, apiVersion, hasAdmin } = getServerConfig()
+  const { storeDomain, apiVersion, hasAdmin } = getServerConfig()
   if (!hasAdmin) {
     throw new Error(
-      'Shopify Admin API is not configured. Add SHOPIFY_ADMIN_ACCESS_TOKEN to your server environment.',
+      'Shopify Admin API is not configured. Add SHOPIFY_CLIENT_ID + SHOPIFY_CLIENT_SECRET (Dev Dashboard) or SHOPIFY_ADMIN_ACCESS_TOKEN.',
     )
   }
+
+  const adminToken = await resolveAdminAccessToken()
 
   const response = await fetch(`https://${storeDomain}/admin/api/${apiVersion}/graphql.json`, {
     method: 'POST',
@@ -84,15 +87,29 @@ export async function createDraftOrder({ items, totals, customer, paymentMethod 
   const { firstName, lastName } = splitName(customer.fullName)
   const phone = customer.phone.replace(/\D/g, '').slice(-10)
 
-  const input = {
-    email: customer.email,
-    phone: `+91${phone}`,
-    note: `Moonberry headless checkout · ${paymentMethod.toUpperCase()}`,
-    tags: ['moonberry-headless', `payment-${paymentMethod}`],
-    lineItems: items.map((item) => ({
+  const lineItems = [
+    ...items.map((item) => ({
       variantId: item.merchandiseId,
       quantity: item.qty,
     })),
+    ...(totals.gst > 0
+      ? [
+          {
+            title: 'GST (18%)',
+            quantity: 1,
+            originalUnitPrice: totals.gst,
+          },
+        ]
+      : []),
+  ]
+
+  const input = {
+    email: customer.email,
+    phone: `+91${phone}`,
+    presentmentCurrencyCode: 'INR',
+    note: `Moonberry headless checkout · ${paymentMethod.toUpperCase()}`,
+    tags: ['moonberry-headless', `payment-${paymentMethod}`],
+    lineItems,
     shippingAddress: {
       firstName,
       lastName,
@@ -100,18 +117,24 @@ export async function createDraftOrder({ items, totals, customer, paymentMethod 
       address2: customer.addressLine2 || undefined,
       city: customer.city,
       province: customer.state,
-      country: 'IN',
+      countryCode: 'IN',
       zip: customer.pincode,
       phone: `+91${phone}`,
     },
-    shippingLine: {
-      title: 'Shipping (India)',
-      price: totals.shipping,
-    },
     customAttributes: [
       { key: 'payment_method', value: paymentMethod },
-      { key: 'gst_estimate_inr', value: String(totals.gst) },
+      { key: 'gst_inr', value: String(totals.gst) },
     ],
+  }
+
+  if (totals.shipping > 0) {
+    input.shippingLine = {
+      title: 'Shipping (India)',
+      priceWithCurrency: {
+        amount: totals.shipping,
+        currencyCode: 'INR',
+      },
+    }
   }
 
   const data = await adminRequest(DRAFT_ORDER_CREATE, { input })

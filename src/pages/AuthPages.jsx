@@ -594,8 +594,7 @@ export function AccountAddressesPage() {
         <p className="text-moonberry-mauve">Loading addresses…</p>
       ) : list.length === 0 ? (
         <p className="rounded-3xl border border-moonberry-rose/30 bg-white/75 p-8 text-moonberry-mauve">
-          No saved addresses yet. Add one at Shopify checkout next time you order, or ensure your storefront token can
-          read customer addresses.
+          No saved addresses yet. Add your delivery address at checkout when you place an order.
         </p>
       ) : (
         <ul className="space-y-3">

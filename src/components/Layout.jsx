@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 import { Link, NavLink } from 'react-router-dom'
 import { Menu, Minus, Plus, Search, ShoppingBag, Trash2, X } from 'lucide-react'
 import { formatINR } from '../lib/currency'
+import { calculateOrderTotals } from '../lib/pricing'
+import { CONTACT_EMAIL } from '../lib/site'
 
 const navLinks = [
   { label: 'Home', to: '/' },
@@ -58,7 +60,7 @@ export function Navbar({
               {!logoMissing ? (
                 <div className="flex items-center gap-3">
                   <img
-                    src="/logo.png"
+                    src="/moonberry-logo.png"
                     alt="Moonberry icon"
                     className="h-11 w-auto object-contain"
                     onError={() => setLogoMissing(true)}
@@ -205,7 +207,7 @@ export function MobileMenu({ open, onClose, loggedIn = false, onLogout }) {
         }`}
       >
         <div className="mb-10 flex items-center justify-between">
-          <img src="/logo.png" alt="Moonberry icon" className="h-14 w-auto object-contain" />
+          <img src="/moonberry-logo.png" alt="Moonberry" className="h-14 w-auto object-contain" />
           <button
             type="button"
             onClick={onClose}
@@ -362,12 +364,10 @@ export function CartDrawer({
   onClearCart,
   onCheckout,
 }) {
-  const subtotal = items.reduce((sum, item) => sum + item.price * item.qty, 0)
-  const freeShippingThreshold = 999
-  const remainingForFreeShipping = Math.max(freeShippingThreshold - subtotal, 0)
-  const shipping = subtotal === 0 || subtotal >= freeShippingThreshold ? 0 : 99
-  const gst = Math.round(subtotal * 0.18)
-  const total = subtotal + shipping
+  const { subtotal, shipping, gst, total } = calculateOrderTotals(
+    items.map((item) => ({ price: item.price, qty: item.qty })),
+  )
+  const remainingForFreeShipping = Math.max(999 - subtotal, 0)
 
   return (
     <div
@@ -521,7 +521,11 @@ export function Footer() {
         </div>
         <div>
           <h4 className="text-xs tracking-[0.2em] uppercase text-moonberry-mauve">Visit</h4>
-          <p className="mt-3">support@moonberry.com</p>
+          <p className="mt-3">
+            <a href={`mailto:${CONTACT_EMAIL}`} className="hover:text-moonberry-brown">
+              {CONTACT_EMAIL}
+            </a>
+          </p>
           <p>Instagram: @moonberry</p>
         </div>
       </div>

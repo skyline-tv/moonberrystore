@@ -12,6 +12,15 @@ async function postJson(path, body) {
   return json
 }
 
+export async function fetchCheckoutReadiness() {
+  const response = await fetch('/api/health')
+  const json = await response.json().catch(() => ({}))
+  if (!response.ok) {
+    throw new Error(json.error || 'Could not reach checkout API.')
+  }
+  return json
+}
+
 export async function createCheckoutOrder(payload) {
   return postJson('/api/checkout/create', payload)
 }
