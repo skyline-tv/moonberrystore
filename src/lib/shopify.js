@@ -1,3 +1,5 @@
+import { resolveCategory } from './categories.js'
+
 function normalizeShopifyStoreDomain(raw) {
   if (!raw) return ''
   let d = String(raw).trim()
@@ -68,8 +70,8 @@ export async function shopifyRequest(query, variables = {}, options = {}) {
   return json.data
 }
 
-const PRODUCTS_AND_COLLECTIONS_QUERY = `
-  query ProductsAndCollections($productsFirst: Int!, $collectionsFirst: Int!) {
+const PRODUCTS_QUERY = `
+  query Products($productsFirst: Int!) {
     products(first: $productsFirst, sortKey: CREATED_AT, reverse: true) {
       edges {
         node {
@@ -117,86 +119,6 @@ const PRODUCTS_AND_COLLECTIONS_QUERY = `
             edges {
               node {
                 url
-              }
-            }
-          }
-        }
-      }
-    }
-    collections(first: $collectionsFirst, sortKey: UPDATED_AT, reverse: true) {
-      edges {
-        node {
-          id
-          handle
-          title
-          description
-          image {
-            url
-          }
-        }
-      }
-    }
-  }
-`
-
-const COLLECTION_BY_HANDLE_QUERY = `
-  query CollectionByHandle($handle: String!, $productsFirst: Int!) {
-    collection(handle: $handle) {
-      id
-      handle
-      title
-      description
-      image {
-        url
-      }
-      products(first: $productsFirst) {
-        edges {
-          node {
-            id
-            title
-            handle
-            description
-            productType
-            tags
-            priceRange {
-              minVariantPrice {
-                amount
-                currencyCode
-              }
-              maxVariantPrice {
-                amount
-                currencyCode
-              }
-            }
-            compareAtPriceRange {
-              minVariantPrice {
-                amount
-              }
-            }
-            variants(first: 20) {
-              edges {
-                node {
-                  id
-                  title
-                  price {
-                    amount
-                    currencyCode
-                  }
-                  compareAtPrice {
-                    amount
-                  }
-                  selectedOptions {
-                    name
-                    value
-                  }
-                }
-              }
-            }
-            images(first: 6) {
-              edges {
-                node {
-                  url
-                }
               }
             }
           }
@@ -354,13 +276,16 @@ function mapProduct(node) {
   const productLevelCompare = compareAt > minPrice ? Math.round(compareAt) : undefined
   const compareAtPrice = displayCompare ?? (productLevelCompare > displayPrice ? productLevelCompare : undefined)
 
+  const { categoryId, category } = resolveCategory(node.productType, node.tags, node.title)
+
   return {
     id: node.id,
     slug: node.handle,
     name: node.title,
-    description: node.description || 'Premium formulation with skin-friendly ingredients.',
-    category: node.productType || 'Beauty',
-    collection: node.tags[0] || 'Moonberry Edit',
+    description: node.description || 'Thoughtfully selected for your everyday beauty ritual.',
+    categoryId,
+    category,
+    collection: category,
     price: displayPrice,
     compareAtPrice,
     sizes: displayLabels,
@@ -392,14 +317,13 @@ export function pickVariantForOption(product, optionLabel) {
   }
 }
 
-function mapCollection(node) {
+export async function getStorefrontCatalog() {
+  const data = await shopifyRequest(PRODUCTS_QUERY, {
+    productsFirst: 40,
+  })
+
   return {
-    id: node.id,
-    handle: node.handle,
-    slug: node.handle,
-    name: node.title,
-    description: node.description || 'Curated selection from the Moonberry catalog.',
-    image: node.image?.url || null,
+    products: data.products.edges.map((edge) => mapProduct(edge.node)),
   }
 }
 
@@ -451,31 +375,6 @@ function mapCart(cart) {
 function assertNoUserErrors(result, operationName) {
   if (result.userErrors?.length) {
     throw new Error(result.userErrors[0].message || `${operationName} failed`)
-  }
-}
-
-export async function getStorefrontCatalog() {
-  const data = await shopifyRequest(PRODUCTS_AND_COLLECTIONS_QUERY, {
-    productsFirst: 40,
-    collectionsFirst: 20,
-  })
-
-  return {
-    products: data.products.edges.map((edge) => mapProduct(edge.node)),
-    collections: data.collections.edges.map((edge) => mapCollection(edge.node)),
-  }
-}
-
-export async function getCollectionByHandle(handle) {
-  const data = await shopifyRequest(COLLECTION_BY_HANDLE_QUERY, {
-    handle,
-    productsFirst: 48,
-  })
-  if (!data.collection) return null
-  const col = data.collection
-  return {
-    collection: mapCollection(col),
-    products: col.products.edges.map((edge) => mapProduct(edge.node)),
   }
 }
 

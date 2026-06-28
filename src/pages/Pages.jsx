@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
-import { CheckCircle2, Mail, MapPin, Phone } from 'lucide-react'
+import { Link, useParams, useSearchParams } from 'react-router-dom'
+import { CheckCircle2, Heart, Mail, MapPin, Phone, Sparkles } from 'lucide-react'
 import { BrandMark } from '../components/BrandMark'
+import { CategoryShowcase } from '../components/CategoryShowcase'
 import {
   Breadcrumbs,
   CheckoutSection,
@@ -15,12 +16,15 @@ import { ProductCard, SectionHeading } from '../components/ProductCard'
 import { formatINR } from '../lib/currency'
 import { calculateOrderTotals } from '../lib/pricing'
 import { fetchCheckoutReadiness } from '../lib/checkoutApi'
-import { getCollectionByHandle, hasShopifyConfig, pickVariantForOption } from '../lib/shopify'
+import { pickVariantForOption } from '../lib/shopify'
+import { getCategoryById, SHOP_CATEGORIES } from '../lib/categories'
+import { getSitePhoto } from '../lib/sitePhotos'
 import { CONTACT_ADDRESS, CONTACT_EMAIL, CONTACT_PHONE, HAS_CONTACT_PHONE } from '../lib/site'
 
-export function HomePage({ onQuickAdd, products = [], collections = [] }) {
+export function HomePage({ onQuickAdd, products = [] }) {
   const bestSellers = products.filter((item) => item.bestSeller).slice(0, 6)
-  const heroImage = collections[0]?.image || products[0]?.images?.[0]
+  const heroImage = getSitePhoto('hero')
+  const storyImage = getSitePhoto('story')
 
   return (
     <div>
@@ -30,74 +34,50 @@ export function HomePage({ onQuickAdd, products = [], collections = [] }) {
           <div className="pointer-events-none absolute -bottom-16 right-0 h-64 w-64 rounded-full bg-moonberry-mauve/25 blur-3xl" />
           <p className="eyebrow">Moonberry</p>
           <h1 className="editorial-heading">
-            Perfume, Skincare, Makeup &amp; Nails — For Everyone.
+            Perfumes, Nails &amp; Hair Care — Crafted for You.
           </h1>
           <p className="mt-6 max-w-lg text-base leading-relaxed text-moonberry-mauve md:text-[17px]">
-            Discover premium fragrances, skincare, cosmetics, and nail essentials designed for every
-            style, tone, and identity.
+            Fine fragrances, nail colour, nail accessories, and hair care rituals — quietly luxurious,
+            made for everyday beauty.
           </p>
           <div className="mt-10 flex flex-wrap gap-3">
             <Link to="/shop" className="btn-primary">
               Shop Now
             </Link>
-            {collections.length > 0 ? (
-              <Link to="/collections" className="btn-secondary">
-                Explore Collections
-              </Link>
-            ) : null}
+            <Link to="/about" className="btn-secondary">
+              Our Story
+            </Link>
           </div>
         </div>
         <div className="animate-fade-in-up animate-delay-200 relative flex items-center justify-center">
           {heroImage ? (
             <img
               src={heroImage}
-              alt="Moonberry collection"
+              alt="Moonberry"
               className="soft-shadow h-[min(580px,68vh)] w-full rounded-4xl object-cover"
             />
           ) : (
-            <div className="flex h-[min(420px,55vh)] w-full items-center justify-center rounded-4xl border border-white/50 bg-white/45">
-              <BrandMark size="lg" />
+            <div className="glass-strong flex h-[min(420px,55vh)] w-full items-center justify-center rounded-4xl">
+              <BrandMark size="xl" />
             </div>
           )}
         </div>
       </section>
 
-      {collections.length > 0 ? (
-        <section className="section-shell py-20">
-          <SectionHeading
-            eyebrow="Collections"
-            title="Shop by Edit"
-            description="Curated selections from our catalog."
-          />
-          <div className="grid gap-6 md:grid-cols-3">
-            {collections.slice(0, 3).map((collection) => (
-              <Link
-                key={collection.id}
-                to={`/collections/${collection.slug}`}
-                className="group relative block overflow-hidden rounded-4xl shadow-[0_12px_40px_rgba(74,59,61,0.08)]"
-              >
-                {collection.image ? (
-                  <img
-                    src={collection.image}
-                    alt={collection.name}
-                    className="h-80 w-full object-cover transition duration-700 group-hover:scale-105"
-                  />
-                ) : (
-                  <div className="h-80 w-full bg-gradient-to-br from-moonberry-cream to-moonberry-blush" />
-                )}
-                <div className="absolute inset-0 bg-gradient-to-t from-moonberry-brown/70 via-moonberry-brown/25 to-transparent p-6 text-white transition duration-500 group-hover:from-moonberry-brown/80">
-                  <p className="mt-44 text-xs uppercase tracking-[0.2em] text-white/80">Collection</p>
-                  <h3 className="font-serif text-3xl">{collection.name}</h3>
-                </div>
-              </Link>
-            ))}
-          </div>
-        </section>
-      ) : null}
+      <CategoryShowcase products={products} />
 
       {bestSellers.length > 0 ? (
-        <section className="section-shell border-t border-moonberry-rose/15 py-20">
-          <SectionHeading eyebrow="Best Sellers" title="Most Loved Pieces" />
+        <section className="section-shell border-t border-white/40 py-20">
+          <SectionHeading
+            eyebrow="Best Sellers"
+            title="Most Loved Pieces"
+            description="Customer favourites from across the catalog."
+            action={
+              <Link to="/shop" className="btn-secondary">
+                View all
+              </Link>
+            }
+          />
           <div className="grid gap-5 md:grid-cols-3">
             {bestSellers.map((product) => (
               <ProductCard key={product.id} product={product} onQuickAdd={onQuickAdd} />
@@ -107,22 +87,37 @@ export function HomePage({ onQuickAdd, products = [], collections = [] }) {
       ) : null}
 
       <section className="section-shell pb-24 pt-4">
-        <div className="card-surface relative overflow-hidden">
+        <div className="glass-strong relative overflow-hidden rounded-4xl">
           <div className="pointer-events-none absolute -right-16 top-0 h-48 w-48 rounded-full bg-moonberry-blush/40 blur-3xl" />
-          <div className="relative flex flex-col items-start gap-8 p-8 md:flex-row md:items-center md:justify-between md:p-12">
+          <div
+            className={`relative flex flex-col gap-8 p-8 md:p-12 ${
+              storyImage
+                ? 'md:grid md:grid-cols-[minmax(0,20rem)_1fr] md:items-center'
+                : 'md:flex-row md:items-center md:justify-between'
+            }`}
+          >
+          {storyImage ? (
+            <img
+              src={storyImage}
+              alt="Moonberry story"
+              className="soft-shadow h-64 w-full rounded-3xl object-cover md:h-72"
+            />
+          ) : null}
+          <div className={storyImage ? 'flex flex-col items-start gap-8 md:flex-row md:items-center md:justify-between' : 'contents'}>
           <div className="max-w-xl">
-            <p className="text-xs uppercase tracking-[0.2em] text-moonberry-mauve">Our Story</p>
+            <p className="eyebrow">Our Story</p>
             <h2 className="mt-2 font-serif text-3xl leading-tight text-moonberry-brown md:text-4xl">
               Self-expression, crafted beautifully.
             </h2>
             <p className="mt-4 text-base leading-relaxed text-moonberry-mauve">
-              Moonberry is a boutique beauty label where fragrance, skin, and nail rituals meet —
+              Moonberry is a boutique beauty label for perfumes, nails, and hair care —
               formulated with rich textures and refined scents that feel quietly luxurious.
             </p>
           </div>
           <Link to="/about" className="btn-secondary shrink-0">
             About us
           </Link>
+          </div>
           </div>
         </div>
       </section>
@@ -131,17 +126,53 @@ export function HomePage({ onQuickAdd, products = [], collections = [] }) {
 }
 
 export function ShopPage({ onQuickAdd, products = [] }) {
-  const [activeCategory, setActiveCategory] = useState('All')
+  const [searchParams, setSearchParams] = useSearchParams()
+  const initialCategory = getCategoryById(searchParams.get('category'))
+    ? searchParams.get('category')
+    : 'All'
+
+  const [activeCategory, setActiveCategory] = useState(initialCategory)
   const [query, setQuery] = useState('')
   const [sortBy, setSortBy] = useState('featured')
-  const categories = ['All', 'Under Rs. 499', ...new Set(products.map((product) => product.category))]
+
+  useEffect(() => {
+    const param = searchParams.get('category')
+    if (param && getCategoryById(param)) {
+      setActiveCategory(param)
+    } else if (!param) {
+      setActiveCategory((prev) => (getCategoryById(prev) ? prev : 'All'))
+    }
+  }, [searchParams])
+
+  const categoryFilters = useMemo(
+    () => [
+      { id: 'All', label: 'All' },
+      { id: 'Under Rs. 499', label: 'Under Rs. 499' },
+      ...SHOP_CATEGORIES.map((cat) => ({ id: cat.id, label: cat.label })),
+    ],
+    [],
+  )
+
+  const setCategory = (categoryId) => {
+    setActiveCategory(categoryId)
+    const next = new URLSearchParams(searchParams)
+    if (categoryId === 'All') {
+      next.delete('category')
+    } else {
+      next.set('category', categoryId)
+    }
+    setSearchParams(next, { replace: true })
+  }
+
+  const activeMeta = getCategoryById(activeCategory)
+
   const visibleProducts = useMemo(() => {
     const filteredByCategory =
       activeCategory === 'All'
         ? products
         : activeCategory === 'Under Rs. 499'
           ? products.filter((product) => product.price < 499)
-          : products.filter((product) => product.category === activeCategory)
+          : products.filter((product) => product.categoryId === activeCategory)
 
     const filteredByQuery = filteredByCategory.filter((product) =>
       `${product.name} ${product.category} ${product.collection}`
@@ -164,14 +195,20 @@ export function ShopPage({ onQuickAdd, products = [] }) {
     <main className="page-main">
       <PageHero
         eyebrow="Shop"
-        title="All Products"
-        description="Luxury perfumes, skincare, cosmetics, and nail care — thoughtfully selected for you."
+        title={activeMeta ? activeMeta.label : 'All Products'}
+        description={
+          activeMeta
+            ? activeMeta.description
+            : 'Perfumes, nails, nail accessories, and hair care — browse the full Moonberry catalog.'
+        }
+        image={getSitePhoto('shop')}
+        imageAlt="Moonberry shop"
       />
-      <div className="mb-8 grid gap-3 rounded-3xl border border-moonberry-rose/20 bg-white/70 p-4 md:grid-cols-[1fr_auto]">
+      <div className="glass-strong mb-8 grid gap-3 rounded-3xl p-4 md:grid-cols-[1fr_auto]">
         <input
           value={query}
           onChange={(event) => setQuery(event.target.value)}
-          placeholder="Search products..."
+          placeholder="Search perfumes, nails, hair care…"
           className="input-field h-11"
         />
         <select
@@ -185,20 +222,21 @@ export function ShopPage({ onQuickAdd, products = [] }) {
           <option value="name-a-z">Name: A to Z</option>
         </select>
       </div>
-      <div className="mb-8 flex flex-wrap gap-3">
-        {categories.map((category) => (
+      <div className="mb-8 flex flex-wrap gap-2">
+        {categoryFilters.map((category) => (
           <button
-            key={category}
+            key={category.id}
             type="button"
-            onClick={() => setActiveCategory(category)}
-            className={`filter-pill ${activeCategory === category ? 'filter-pill-active' : ''}`}
+            onClick={() => setCategory(category.id)}
+            className={`filter-pill ${activeCategory === category.id ? 'filter-pill-active' : ''}`}
           >
-            {category}
+            {category.label}
           </button>
         ))}
       </div>
-      <p className="mb-5 text-sm text-moonberry-mauve">
-        Showing {visibleProducts.length} product{visibleProducts.length === 1 ? '' : 's'}
+      <p className="glass-strong mb-6 inline-flex rounded-full px-4 py-2 text-sm text-moonberry-mauve">
+        Showing <span className="font-medium text-moonberry-brown">{visibleProducts.length}</span>{' '}
+        product{visibleProducts.length === 1 ? '' : 's'}
       </p>
       {visibleProducts.length > 0 ? (
         <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
@@ -209,160 +247,22 @@ export function ShopPage({ onQuickAdd, products = [] }) {
       ) : (
         <EmptyState
           title="No products found"
-          description="Try changing category, search, or sort options."
-        />
-      )}
-    </main>
-  )
-}
-
-export function CollectionsPage({ collections = [] }) {
-  return (
-    <main className="page-main">
-      <PageHero
-        eyebrow="Collections"
-        title="Browse by Edit"
-        description="Editorial beauty collections, each with its own mood and ritual."
-      />
-      <div className="space-y-8">
-        {collections.map((collection, index) => (
-          <article
-            key={collection.id}
-            className={`collection-editorial group ${index % 2 === 1 ? 'md:[&>div:first-child]:order-2' : ''}`}
-          >
-            {collection.image ? (
-              <img src={collection.image} alt={collection.name} className="collection-editorial-image" />
-            ) : (
-              <div className="h-72 bg-gradient-to-br from-moonberry-cream to-moonberry-blush md:min-h-[22rem]" />
-            )}
-            <div className="flex flex-col justify-center p-8 md:p-12">
-              <p className="eyebrow">Collection</p>
-              <h3 className="font-serif text-4xl text-moonberry-brown md:text-5xl">{collection.name}</h3>
-              <p className="mt-4 leading-relaxed text-moonberry-mauve">{collection.description}</p>
-              <Link to={`/collections/${collection.slug}`} className="btn-secondary mt-8 w-fit">
-                View Collection
-              </Link>
-            </div>
-          </article>
-        ))}
-      </div>
-    </main>
-  )
-}
-
-export function CollectionDetailPage({ onQuickAdd }) {
-  const { slug } = useParams()
-  const [collection, setCollection] = useState(null)
-  const [products, setProducts] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [notFound, setNotFound] = useState(false)
-
-  useEffect(() => {
-    let cancelled = false
-    ;(async () => {
-      if (!hasShopifyConfig || !slug) {
-        setLoading(false)
-        setNotFound(true)
-        return
-      }
-      setLoading(true)
-      setNotFound(false)
-      try {
-        const result = await getCollectionByHandle(slug)
-        if (cancelled) return
-        if (!result || !result.collection) {
-          setCollection(null)
-          setProducts([])
-          setNotFound(true)
-        } else {
-          setCollection(result.collection)
-          setProducts(result.products)
-          setNotFound(false)
-        }
-      } catch {
-        if (!cancelled) {
-          setNotFound(true)
-          setCollection(null)
-          setProducts([])
-        }
-      } finally {
-        if (!cancelled) setLoading(false)
-      }
-    })()
-    return () => {
-      cancelled = true
-    }
-  }, [slug])
-
-  if (loading) {
-    return (
-      <main className="page-main">
-        <div className="flex min-h-[40vh] items-center justify-center">
-          <p className="text-moonberry-mauve">Loading collection…</p>
-        </div>
-      </main>
-    )
-  }
-
-  if (notFound || !collection) {
-    return (
-      <main className="page-main">
-        <EmptyState
-          eyebrow="Collections"
-          title="Collection not found"
-          description="This collection may not exist or is unavailable."
+          description="Try a different category, search term, or sort option."
           action={
-            <Link to="/collections" className="btn-primary">
-              All collections
-            </Link>
+            <button
+              type="button"
+              className="btn-secondary"
+              onClick={() => {
+                setQuery('')
+                setCategory('All')
+                setSortBy('featured')
+              }}
+            >
+              Clear filters
+            </button>
           }
         />
-      </main>
-    )
-  }
-
-  return (
-    <main className="page-main">
-      <Breadcrumbs
-        items={[
-          { label: 'Home', to: '/' },
-          { label: 'Collections', to: '/collections' },
-          { label: collection.name },
-        ]}
-      />
-      <div className="grid gap-10 lg:grid-cols-[1fr_1.15fr] lg:items-center">
-        <div className="overflow-hidden rounded-4xl">
-          {collection.image ? (
-            <img
-              src={collection.image}
-              alt={collection.name}
-              className="soft-shadow aspect-[4/5] w-full object-cover lg:aspect-auto lg:min-h-[28rem]"
-            />
-          ) : (
-            <div className="aspect-[4/5] w-full bg-gradient-to-br from-moonberry-cream to-moonberry-blush lg:min-h-[28rem]" />
-          )}
-        </div>
-        <div>
-          <p className="eyebrow">Collection</p>
-          <h1 className="page-title">{collection.name}</h1>
-          <p className="page-description">{collection.description}</p>
-        </div>
-      </div>
-      <div className="mt-20 border-t border-moonberry-rose/15 pt-16">
-        <SectionHeading eyebrow="The Edit" title="Products in this collection" />
-        {products.length === 0 ? (
-          <EmptyState
-            title="No products yet"
-            description="This collection is being curated. Check back soon."
-          />
-        ) : (
-          <div className="mt-8 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
-            {products.map((product) => (
-              <ProductCard key={product.id} product={product} onQuickAdd={onQuickAdd} />
-            ))}
-          </div>
-        )}
-      </div>
+      )}
     </main>
   )
 }
@@ -429,10 +329,10 @@ export function ProductPage({ onQuickAdd, products = [] }) {
         ]}
       />
       <div className="grid gap-10 lg:grid-cols-2 lg:gap-14">
-        <div>
-          <img src={activeImage} alt={product.name} className="product-gallery-main" />
+        <div className="glass-strong rounded-4xl p-2">
+          <img src={activeImage} alt={product.name} className="product-gallery-main rounded-3xl" />
           {product.images.length > 1 ? (
-            <div className="mt-4 grid grid-cols-4 gap-3">
+            <div className="mt-4 grid grid-cols-4 gap-3 px-2 pb-2">
               {product.images.map((image) => (
                 <button
                   key={image}
@@ -454,8 +354,15 @@ export function ProductPage({ onQuickAdd, products = [] }) {
             </div>
           ) : null}
         </div>
-        <div className="product-info-panel">
-          <p className="eyebrow">{product.collection}</p>
+        <div className="glass-strong rounded-4xl p-8 md:p-10 lg:sticky lg:top-28">
+          <p className="eyebrow">
+            <Link
+              to={`/shop?category=${product.categoryId}`}
+              className="transition hover:text-moonberry-rose"
+            >
+              {product.category}
+            </Link>
+          </p>
           <h1 className="mt-2 font-serif text-4xl leading-[1.02] text-moonberry-brown md:text-5xl">{product.name}</h1>
           <div className="mt-6 flex items-end gap-3 border-b border-moonberry-rose/15 pb-6">
             <p className="price-display">{formatINR(displayPrice)}</p>
@@ -543,7 +450,7 @@ export function ProductPage({ onQuickAdd, products = [] }) {
         </div>
       </div>
 
-      <section className="mt-24 border-t border-moonberry-rose/15 pt-20">
+      <section className="mt-24 border-t border-white/40 pt-20">
         <SectionHeading eyebrow="Complete the ritual" title="You May Also Like" />
         <div className="grid gap-5 md:grid-cols-3">
           {products
@@ -555,7 +462,7 @@ export function ProductPage({ onQuickAdd, products = [] }) {
         </div>
       </section>
 
-      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-moonberry-rose/20 bg-white/95 p-3 backdrop-blur-xl md:hidden">
+      <div className="glass-strong fixed inset-x-0 bottom-0 z-30 border-t border-white/40 p-3 backdrop-blur-xl md:hidden">
         <button type="button" className="btn-primary w-full" onClick={handleAddToCart}>
           Add to Cart · {formatINR(displayPrice)}
         </button>
@@ -565,16 +472,37 @@ export function ProductPage({ onQuickAdd, products = [] }) {
 }
 
 export function AboutPage() {
+  const aboutImage = getSitePhoto('about')
+  const values = [
+    {
+      icon: Sparkles,
+      title: 'Curated rituals',
+      description: 'Perfumes, nails, and hair care chosen for everyday luxury.',
+    },
+    {
+      icon: Heart,
+      title: 'Made with care',
+      description: 'Rich textures and refined scents that feel quietly indulgent.',
+    },
+    {
+      icon: MapPin,
+      title: 'Rooted in India',
+      description: 'Crafted for Indian climates, tones, and beauty routines.',
+    },
+  ]
+
   return (
     <main className="page-main">
       <PageHero
         eyebrow="About Moonberry"
         title="Modern beauty with timeless intent."
-        description="A boutique label where fragrance, skin, and nail rituals meet quiet luxury."
+        description="A boutique label where fragrance, nails, and hair rituals meet quiet luxury."
+        image={aboutImage}
+        imageAlt="About Moonberry"
       />
       <ProseArticle>
         <p>
-          Moonberry is a boutique beauty label where fragrance, skin, and nail rituals meet.
+          Moonberry is a boutique beauty label where fragrance, nails, and hair rituals meet.
           We formulate intentionally with rich textures and refined scents that feel quietly luxurious.
         </p>
         <p>
@@ -582,6 +510,17 @@ export function AboutPage() {
           beauty that feels calm, confident, and exquisitely modern.
         </p>
       </ProseArticle>
+      <div className="mx-auto mt-10 grid max-w-4xl gap-4 md:grid-cols-3">
+        {values.map((item) => (
+          <div key={item.title} className="glass rounded-3xl p-6">
+            <span className="glass-icon mb-4 inline-flex">
+              <item.icon size={18} aria-hidden />
+            </span>
+            <h3 className="font-serif text-xl text-moonberry-brown">{item.title}</h3>
+            <p className="mt-2 text-sm leading-relaxed text-moonberry-mauve">{item.description}</p>
+          </div>
+        ))}
+      </div>
     </main>
   )
 }
@@ -597,6 +536,8 @@ export function ContactPage() {
         eyebrow="Contact"
         title="We'd love to hear from you."
         description="For beauty consultations, wholesale, and customer support inquiries."
+        image={getSitePhoto('contact')}
+        imageAlt="Contact Moonberry"
       />
       <div className="grid gap-8 lg:grid-cols-[0.9fr_1.1fr]">
         <div className="space-y-4">
@@ -616,7 +557,7 @@ export function ContactPage() {
             {CONTACT_ADDRESS}
           </ContactCard>
         </div>
-        <form className="card-surface p-8 md:p-10" onSubmit={(event) => {
+        <form className="glass-strong p-8 md:p-10" onSubmit={(event) => {
             event.preventDefault()
             if (!form.name.trim() || !form.email.includes('@') || form.message.trim().length < 10) {
               setFormStatus({
@@ -842,14 +783,14 @@ export function CheckoutPage({
       />
 
       {defaultEmail ? (
-        <p className="mb-6 text-sm text-moonberry-mauve">
-          Signed in as <span className="text-moonberry-brown">{defaultEmail}</span>.
+        <p className="glass mb-6 rounded-2xl px-4 py-3 text-sm text-moonberry-mauve">
+          Signed in as <span className="font-medium text-moonberry-brown">{defaultEmail}</span>.
         </p>
       ) : null}
 
       {codReady === false ? (
         <div
-          className="mb-8 rounded-2xl border border-amber-300/80 bg-amber-50/95 p-5 text-sm text-amber-950"
+          className="glass mb-8 rounded-3xl border border-amber-200/60 p-5 text-sm text-amber-950"
           role="alert"
         >
           <p className="font-medium">Checkout is temporarily unavailable.</p>
@@ -879,7 +820,7 @@ export function CheckoutPage({
                 {cartItems.map((item) => (
                   <div
                     key={item.lineId || item.id}
-                    className="flex gap-4 rounded-2xl border border-moonberry-rose/25 p-3"
+                    className="glass flex gap-4 rounded-3xl p-4"
                   >
                     <img src={item.image} alt={item.name} className="h-20 w-16 rounded-lg object-cover" />
                     <div className="min-w-0 flex-1">
@@ -1059,7 +1000,7 @@ export function CheckoutPage({
           </div>
 
           <aside className="lg:sticky lg:top-28">
-            <div className="card-surface p-6 md:p-8">
+            <div className="glass-strong p-6 md:p-8">
               <p className="eyebrow">Summary</p>
               <h3 className="font-serif text-2xl text-moonberry-brown">Order total</h3>
 
@@ -1118,10 +1059,10 @@ export function CheckoutPage({
   )
 }
 
-function StaticArticle({ eyebrow, title, children }) {
+function StaticArticle({ eyebrow, title, description, children }) {
   return (
     <main className="page-main">
-      <PageHero eyebrow={eyebrow} title={title} />
+      <PageHero eyebrow={eyebrow} title={title} description={description} />
       <ProseArticle>{children}</ProseArticle>
     </main>
   )
@@ -1129,7 +1070,11 @@ function StaticArticle({ eyebrow, title, children }) {
 
 export function ShippingReturnsPage() {
   return (
-    <StaticArticle eyebrow="Policies" title="Shipping & returns">
+    <StaticArticle
+      eyebrow="Policies"
+      title="Shipping & returns"
+      description="Delivery across India and our return window for eligible products."
+    >
       <p>
         We ship across India. Orders are packed with care and dispatched from our fulfilment partners. You will receive
         tracking details by SMS and email once your order ships.
@@ -1158,7 +1103,11 @@ export function ShippingReturnsPage() {
 
 export function PrivacyPolicyPage() {
   return (
-    <StaticArticle eyebrow="Legal" title="Privacy policy">
+    <StaticArticle
+      eyebrow="Legal"
+      title="Privacy policy"
+      description="How Moonberry handles your information when you shop with us."
+    >
       <p>
         Moonberry respects your privacy. This site uses your information only to operate the store, process orders, and
         communicate about purchases and marketing where you have opted in.
@@ -1188,20 +1137,24 @@ export function PrivacyPolicyPage() {
 
 export function IngredientsUsagePage() {
   return (
-    <StaticArticle eyebrow="Care" title="Ingredients & usage">
+    <StaticArticle
+      eyebrow="Care"
+      title="Ingredients & usage"
+      description="How to use and store Moonberry products safely."
+    >
       <p>
         Moonberry products are formulated for everyday wear and Indian climates. Always read the ingredient list on the
         product packaging before use, especially if you have allergies or sensitive skin.
       </p>
       <h2 className="font-serif text-2xl text-moonberry-brown">How to use</h2>
-      <ul className="list-inside list-disc space-y-2">
-        <li>Skincare: apply to clean skin unless the label directs otherwise; follow with SPF in the daytime.</li>
-        <li>Makeup: patch test new shades on the jawline if you have reactive skin.</li>
-        <li>Fragrance: spray on pulse points; avoid rubbing wrists together vigorously.</li>
+        <ul className="list-inside list-disc space-y-2">
+        <li>Perfumes: apply to pulse points; avoid rubbing wrists together vigorously.</li>
+        <li>Nail colour: use a base coat for longer wear and to protect natural nails.</li>
+        <li>Hair care: follow label directions; patch test if you have a sensitive scalp.</li>
       </ul>
       <h2 className="font-serif text-2xl text-moonberry-brown">Storage</h2>
       <p>Store products away from direct sunlight and excessive heat. Close lids tightly after each use.</p>
-      <p className="rounded-2xl border border-moonberry-rose/30 bg-white/70 p-4 text-sm">
+      <p className="glass rounded-2xl p-4 text-sm">
         Product-specific directions appear on each Shopify product page and on the physical label. When in doubt,
         consult a dermatologist.
       </p>
@@ -1211,7 +1164,11 @@ export function IngredientsUsagePage() {
 
 export function TermsPage() {
   return (
-    <StaticArticle eyebrow="Legal" title="Terms of use">
+    <StaticArticle
+      eyebrow="Legal"
+      title="Terms of use"
+      description="The terms that apply when you browse and purchase from Moonberry."
+    >
       <p>
         By using this website and purchasing from Moonberry, you agree to these terms. Product availability, prices,
         and promotions may change without notice; the checkout page on Shopify shows the final price and terms for
@@ -1266,13 +1223,15 @@ export function FaqPage() {
           },
         ]}
       />
-      <p className="mx-auto mt-12 max-w-3xl text-center text-sm text-moonberry-mauve">
-        Still need help?{' '}
-        <Link to="/contact" className="text-moonberry-brown underline underline-offset-[3px]">
-          Contact us
-        </Link>
-        .
-      </p>
+      <div className="glass-strong mx-auto mt-12 max-w-3xl rounded-3xl p-8 text-center">
+        <p className="text-sm text-moonberry-mauve">
+          Still need help?{' '}
+          <Link to="/contact" className="font-medium text-moonberry-brown underline underline-offset-[3px]">
+            Contact us
+          </Link>
+          .
+        </p>
+      </div>
     </main>
   )
 }

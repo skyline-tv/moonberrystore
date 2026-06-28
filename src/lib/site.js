@@ -1,5 +1,5 @@
 export const SITE_NAME = 'MoonBerry'
-export const SITE_TAGLINE = 'Premium beauty & fragrance, crafted for India.'
+export const SITE_TAGLINE = 'Perfumes, nails & hair care — crafted for India.'
 
 export const CONTACT_EMAIL =
   import.meta.env.VITE_CONTACT_EMAIL?.trim() || 'moonberry.bussness@gmail.com'

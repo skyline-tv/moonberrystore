@@ -29,8 +29,6 @@ import { createCheckoutOrder } from './lib/checkoutApi'
 import {
   AboutPage,
   CheckoutPage,
-  CollectionDetailPage,
-  CollectionsPage,
   ContactPage,
   FaqPage,
   HomePage,
@@ -67,7 +65,7 @@ function ToastStack({ toasts, onDismiss }) {
       {toasts.map((toast) => (
         <div
           key={toast.id}
-          className="pointer-events-auto flex items-start gap-3 rounded-2xl border border-moonberry-rose/30 bg-white p-3 shadow-lg"
+          className="pointer-events-auto glass-strong flex items-start gap-3 rounded-2xl p-3"
         >
           <CheckCircle2 size={18} className="mt-0.5 text-green-700" />
           <p className="flex-1 text-sm text-moonberry-brown">{toast.message}</p>
@@ -93,7 +91,6 @@ function App() {
   const [searchOpen, setSearchOpen] = useState(false)
   const [toasts, setToasts] = useState([])
   const [products, setProducts] = useState([])
-  const [collections, setCollections] = useState([])
   const [catalogLoaded, setCatalogLoaded] = useState(false)
   const [catalogError, setCatalogError] = useState('')
   const [shopifyCartId, setShopifyCartId] = useState(null)
@@ -193,13 +190,11 @@ function App() {
         const catalog = await getStorefrontCatalog()
         if (!cancelled) {
           setProducts(catalog.products)
-          setCollections(catalog.collections)
           setCatalogError('')
         }
       } catch (error) {
         if (!cancelled) {
           setProducts([])
-          setCollections([])
           setCatalogError(
             `Could not load Shopify catalog. ${error?.message || 'Check Storefront API credentials.'}`,
           )
@@ -461,7 +456,6 @@ function App() {
   const allowWithCatalogError =
     ['/login', '/signup', '/checkout', '/forgot-password'].includes(location.pathname) ||
     location.pathname.startsWith('/account') ||
-    location.pathname.startsWith('/collections/') ||
     policyPaths.includes(location.pathname)
   const cartItemCount = cartItems.reduce((sum, item) => sum + item.qty, 0)
 
@@ -634,14 +628,9 @@ function App() {
         <Routes>
           <Route
             path="/"
-            element={<HomePage onQuickAdd={addToCart} products={products} collections={collections} />}
+            element={<HomePage onQuickAdd={addToCart} products={products} />}
           />
           <Route path="/shop" element={<ShopPage onQuickAdd={addToCart} products={products} />} />
-          <Route path="/collections" element={<CollectionsPage collections={collections} />} />
-          <Route
-            path="/collections/:slug"
-            element={<CollectionDetailPage onQuickAdd={addToCart} />}
-          />
           <Route path="/about" element={<AboutPage />} />
           <Route path="/contact" element={<ContactPage />} />
           <Route path="/shipping-returns" element={<ShippingReturnsPage />} />

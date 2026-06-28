@@ -33,14 +33,26 @@ body {
   font-family: var(--font-sans);
   font-weight: 400;
   color: var(--color-moonberry-brown);
-  background-color: var(--color-moonberry-cream);
+  background-color: #f5f0ef;
   background-image:
-    radial-gradient(circle at 18% -8%, rgba(90, 43, 35, 0.12), transparent 42%),
-    radial-gradient(circle at 88% 4%, rgba(138, 75, 63, 0.08), transparent 38%),
-    radial-gradient(circle at 50% 100%, rgba(232, 213, 216, 0.45), transparent 55%),
-    linear-gradient(180deg, #faf7f6 0%, var(--color-moonberry-cream) 45%, #efe6e4 100%);
+    radial-gradient(ellipse 80% 50% at 20% -10%, rgba(184, 149, 106, 0.18), transparent 55%),
+    radial-gradient(ellipse 60% 45% at 85% 5%, rgba(138, 75, 63, 0.12), transparent 50%),
+    radial-gradient(ellipse 70% 60% at 50% 100%, rgba(232, 213, 216, 0.5), transparent 60%),
+    linear-gradient(165deg, #fdfbfb 0%, var(--color-moonberry-cream) 40%, #ebe3e1 100%);
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 15% 25%, rgba(255, 255, 255, 0.55) 0%, transparent 28%),
+    radial-gradient(circle at 78% 18%, rgba(232, 213, 216, 0.45) 0%, transparent 32%),
+    radial-gradient(circle at 62% 78%, rgba(184, 149, 106, 0.12) 0%, transparent 35%);
 }
 
 a {
@@ -127,7 +139,7 @@ select:focus-visible {
 }
 
 .page-hero {
-  @apply mb-12 max-w-3xl;
+  @apply mb-10 max-w-none;
 }
 
 .page-title {
@@ -157,11 +169,78 @@ select:focus-visible {
 }
 
 .glass {
-  @apply border border-white/40 bg-white/60 backdrop-blur-xl;
+  background: rgba(255, 255, 255, 0.42);
+  backdrop-filter: blur(20px) saturate(160%);
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  box-shadow:
+    0 8px 32px rgba(74, 59, 61, 0.07),
+    inset 0 1px 0 rgba(255, 255, 255, 0.65);
+}
+
+.glass-strong {
+  background: rgba(255, 255, 255, 0.62);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  box-shadow:
+    0 12px 40px rgba(74, 59, 61, 0.09),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+.glass-category {
+  background: rgba(255, 255, 255, 0.35);
+  backdrop-filter: blur(18px) saturate(150%);
+  -webkit-backdrop-filter: blur(18px) saturate(150%);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  box-shadow:
+    0 10px 36px rgba(74, 59, 61, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.75);
+}
+
+.glass-icon {
+  @apply inline-flex h-11 w-11 items-center justify-center rounded-2xl text-moonberry-rose;
+  background: rgba(255, 255, 255, 0.55);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
 }
 
 .card-surface {
-  @apply rounded-3xl border border-white/55 bg-white/78 shadow-[0_10px_40px_rgba(74,59,61,0.07)];
+  background: rgba(255, 255, 255, 0.48);
+  backdrop-filter: blur(20px) saturate(165%);
+  -webkit-backdrop-filter: blur(20px) saturate(165%);
+  border: 1px solid rgba(255, 255, 255, 0.58);
+  border-radius: 1.5rem;
+  box-shadow:
+    0 10px 40px rgba(74, 59, 61, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.72);
+}
+
+.hero-panel {
+  background: rgba(255, 255, 255, 0.38);
+  backdrop-filter: blur(22px) saturate(170%);
+  -webkit-backdrop-filter: blur(22px) saturate(170%);
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  box-shadow:
+    0 16px 48px rgba(74, 59, 61, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  @apply relative overflow-hidden rounded-4xl p-8 md:p-12;
+}
+
+.hero-panel::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(247, 241, 238, 0.85), rgba(207, 174, 180, 0.45));
+  pointer-events: none;
+  z-index: 0;
+}
+
+.hero-panel > * {
+  position: relative;
+  z-index: 1;
 }
 
 .editorial-heading {
@@ -172,16 +251,15 @@ select:focus-visible {
   box-shadow: 0 18px 50px rgba(74, 59, 61, 0.14);
 }
 
-.hero-panel {
-  @apply relative overflow-hidden rounded-4xl border border-white/40 bg-gradient-to-br from-[#f7f1ee] via-[#eedfe2] to-[#cfaeb4] p-8 md:p-12;
-}
-
 .btn-primary {
   @apply inline-flex items-center justify-center rounded-full bg-moonberry-brown px-7 py-3.5 text-[11px] font-medium tracking-[0.18em] uppercase text-white transition hover:bg-moonberry-mauve hover:shadow-[0_10px_28px_rgba(60,30,24,0.28)];
 }
 
 .btn-secondary {
-  @apply inline-flex items-center justify-center rounded-full border border-moonberry-rose/40 bg-white/55 px-7 py-3.5 text-[11px] font-medium tracking-[0.18em] uppercase text-moonberry-brown backdrop-blur-sm transition hover:border-moonberry-brown/35 hover:bg-white/95;
+  background: rgba(255, 255, 255, 0.45);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  @apply inline-flex items-center justify-center rounded-full border border-white/60 px-7 py-3.5 text-[11px] font-medium tracking-[0.18em] uppercase text-moonberry-brown transition hover:border-moonberry-brown/35 hover:bg-white/70;
 }
 
 .btn-ghost {
@@ -189,15 +267,24 @@ select:focus-visible {
 }
 
 .input-field {
-  @apply h-12 w-full rounded-2xl border border-moonberry-rose/30 bg-white/90 px-4 text-moonberry-brown outline-none placeholder:text-moonberry-mauve/55 focus:border-moonberry-brown/40;
+  background: rgba(255, 255, 255, 0.55);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  @apply h-12 w-full rounded-2xl border border-white/55 px-4 text-moonberry-brown outline-none placeholder:text-moonberry-mauve/55 focus:border-moonberry-brown/35;
 }
 
 .textarea-field {
-  @apply w-full rounded-2xl border border-moonberry-rose/30 bg-white/90 px-4 py-3 text-moonberry-brown outline-none placeholder:text-moonberry-mauve/55 focus:border-moonberry-brown/40;
+  background: rgba(255, 255, 255, 0.55);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  @apply w-full rounded-2xl border border-white/55 px-4 py-3 text-moonberry-brown outline-none placeholder:text-moonberry-mauve/55 focus:border-moonberry-brown/35;
 }
 
 .filter-pill {
-  @apply rounded-full border border-moonberry-rose/35 bg-white/80 px-5 py-2.5 text-[10px] font-medium uppercase tracking-[0.18em] text-moonberry-brown transition hover:border-moonberry-brown/35;
+  background: rgba(255, 255, 255, 0.5);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  @apply rounded-full border border-white/55 px-5 py-2.5 text-[10px] font-medium uppercase tracking-[0.18em] text-moonberry-brown transition hover:border-moonberry-brown/30;
 }
 
 .filter-pill-active {
@@ -205,11 +292,21 @@ select:focus-visible {
 }
 
 .empty-state {
-  @apply mx-auto max-w-xl rounded-3xl border border-white/55 bg-white/78 p-10 text-center shadow-[0_10px_40px_rgba(74,59,61,0.07)] md:p-12;
+  background: rgba(255, 255, 255, 0.5);
+  backdrop-filter: blur(20px) saturate(160%);
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
+  @apply mx-auto max-w-xl rounded-3xl border border-white/58 p-10 text-center shadow-[0_10px_40px_rgba(74,59,61,0.08)] md:p-12;
 }
 
 .prose-luxury {
-  @apply mx-auto max-w-3xl space-y-6 rounded-3xl border border-white/55 bg-white/78 p-8 text-[15px] leading-[1.75] text-moonberry-mauve shadow-[0_10px_40px_rgba(74,59,61,0.07)] md:p-10 md:text-base;
+  background: rgba(255, 255, 255, 0.62);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  box-shadow:
+    0 12px 40px rgba(74, 59, 61, 0.09),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  @apply mx-auto max-w-3xl space-y-6 rounded-4xl p-8 text-[15px] leading-[1.75] text-moonberry-mauve md:p-10 md:text-base;
 }
 
 .prose-luxury h2 {
@@ -225,28 +322,15 @@ select:focus-visible {
 }
 
 .accordion-luxury {
-  @apply rounded-2xl border border-moonberry-rose/20 bg-white/75 p-5 transition open:border-moonberry-rose/35 open:bg-white/90 open:shadow-[0_8px_30px_rgba(74,59,61,0.06)];
-}
-
-.checkout-section {
-  @apply rounded-3xl border border-white/55 bg-white/78 p-6 shadow-[0_10px_40px_rgba(74,59,61,0.07)] md:p-8;
-}
-
-.collection-editorial {
-  @apply grid overflow-hidden rounded-3xl border border-white/55 bg-white/78 shadow-[0_10px_40px_rgba(74,59,61,0.07)] md:grid-cols-[1.35fr_1fr];
-}
-
-.collection-editorial-image {
-  @apply h-72 w-full object-cover transition duration-700 group-hover:scale-[1.03] md:h-full md:min-h-[22rem];
+  background: rgba(255, 255, 255, 0.45);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  @apply rounded-2xl border border-white/55 p-5 transition open:shadow-[0_8px_30px_rgba(74,59,61,0.06)];
 }
 
 .product-gallery-main {
   @apply aspect-[4/5] w-full rounded-4xl object-cover;
   box-shadow: 0 18px 50px rgba(74, 59, 61, 0.14);
-}
-
-.product-info-panel {
-  @apply rounded-3xl border border-white/55 bg-white/78 p-8 shadow-[0_10px_40px_rgba(74,59,61,0.07)] md:p-10 lg:sticky lg:top-28;
 }
 
 .price-display {
@@ -282,10 +366,6 @@ select:focus-visible {
 
 .divider-dot {
   @apply mx-3 hidden h-1 w-1 rounded-full bg-moonberry-rose/40 sm:inline-block;
-}
-
-.logo-seal {
-  @apply inline-flex items-center justify-center rounded-xl bg-moonberry-ink px-2.5 py-1.5 shadow-[0_4px_16px_rgba(0,0,0,0.18)];
 }
 
 @media (prefers-reduced-motion: reduce) {

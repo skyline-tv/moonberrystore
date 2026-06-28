@@ -17,11 +17,11 @@ import { BrandMark } from './BrandMark'
 import { formatINR } from '../lib/currency'
 import { calculateOrderTotals } from '../lib/pricing'
 import { CONTACT_EMAIL } from '../lib/site'
+import { SHOP_CATEGORIES } from '../lib/categories'
 
 const navLinks = [
   { label: 'Home', to: '/' },
   { label: 'Shop', to: '/shop' },
-  { label: 'Collections', to: '/collections' },
   { label: 'About', to: '/about' },
   { label: 'FAQ', to: '/faq' },
   { label: 'Contact', to: '/contact' },
@@ -52,16 +52,14 @@ export function Navbar({
         }`}
       >
         <div
-          className={`relative flex items-center justify-between rounded-2xl border px-4 py-3 md:px-6 ${
-            scrolled
-              ? 'glass border-white/70 shadow-[0_10px_40px_rgba(74,59,61,0.1)]'
-              : 'border-white/30 bg-white/40 backdrop-blur-md'
+          className={`glass relative flex items-center justify-between rounded-2xl border px-4 py-3 md:px-6 ${
+            scrolled ? 'border-white/70 shadow-[0_10px_40px_rgba(74,59,61,0.1)]' : 'border-white/40'
           } transition-all duration-500`}
         >
           <div className="flex min-w-[42px] items-center md:min-w-0 md:flex-1">
             <button
               type="button"
-              className="inline-flex rounded-full border border-white/60 bg-white/70 p-2.5 text-moonberry-brown shadow-sm transition hover:bg-white md:hidden"
+              className="glass-icon inline-flex md:hidden"
               onClick={onOpenMobile}
               aria-label="Open mobile menu"
             >
@@ -137,7 +135,7 @@ export function Navbar({
             </div>
             <button
               type="button"
-              className="rounded-full border border-white/60 bg-white/70 p-2.5 text-moonberry-brown shadow-sm transition hover:bg-white"
+              className="glass-icon"
               onClick={onOpenSearch}
               aria-label="Search"
             >
@@ -145,7 +143,7 @@ export function Navbar({
             </button>
             <button
               type="button"
-              className="relative rounded-full border border-white/60 bg-white/70 p-2.5 text-moonberry-brown shadow-sm transition hover:bg-white"
+              className="glass-icon relative"
               onClick={onOpenCart}
               aria-label="Open cart"
             >
@@ -173,7 +171,7 @@ export function IndiaTrustBar() {
 
   return (
     <div className="section-shell mt-2 md:mt-3">
-      <div className="overflow-hidden rounded-2xl border border-moonberry-rose/20 bg-white/65 shadow-[0_4px_20px_rgba(74,59,61,0.05)] backdrop-blur-sm">
+      <div className="glass overflow-hidden rounded-2xl">
         <div className="flex flex-wrap items-center justify-center gap-x-1 gap-y-2 px-4 py-2.5">
           {trustItems.map((item, index) => (
             <span key={item.label} className="inline-flex items-center">
@@ -200,9 +198,13 @@ export function MobileMenu({ open, onClose, loggedIn = false, onLogout }) {
         onClick={onClose}
       />
       <aside
-        className={`absolute left-0 top-0 flex h-full w-[min(100vw,20rem)] flex-col border-r border-moonberry-rose/20 bg-[#faf6f5]/98 p-6 shadow-[8px_0_40px_rgba(74,59,61,0.08)] backdrop-blur-xl transition-transform duration-300 ${
+        className={`absolute left-0 top-0 flex h-full w-[min(100vw,20rem)] flex-col border-r border-white/50 p-6 shadow-[8px_0_40px_rgba(74,59,61,0.08)] backdrop-blur-xl transition-transform duration-300 ${
           open ? 'translate-x-0' : '-translate-x-full'
         }`}
+        style={{
+          background: 'rgba(255, 255, 255, 0.72)',
+          backdropFilter: 'blur(24px) saturate(180%)',
+        }}
       >
         <div className="mb-10 flex items-center justify-between">
           <BrandMark size="lg" />
@@ -222,7 +224,7 @@ export function MobileMenu({ open, onClose, loggedIn = false, onLogout }) {
               to={link.to}
               className={({ isActive }) =>
                 `rounded-xl px-4 py-3 font-serif text-xl transition ${
-                  isActive ? 'bg-white text-moonberry-brown shadow-sm' : 'text-moonberry-brown/85 hover:bg-white/60'
+                  isActive ? 'glass font-medium text-moonberry-brown shadow-sm' : 'text-moonberry-brown/85 hover:bg-white/35'
                 }`
               }
               onClick={onClose}
@@ -307,14 +309,14 @@ export function SearchModal({
       <div
         className={`section-shell absolute inset-x-0 top-24 transition duration-300 ${open ? 'translate-y-0 opacity-100' : '-translate-y-2 opacity-0'}`}
       >
-        <div className="mx-auto w-full max-w-3xl rounded-4xl border border-moonberry-rose/20 bg-white/95 p-6 shadow-[0_20px_60px_rgba(74,59,61,0.12)] backdrop-blur-xl">
-          <div className="flex items-center gap-3 rounded-2xl border border-moonberry-rose/25 bg-moonberry-cream/30 px-4">
+        <div className="glass-strong mx-auto w-full max-w-3xl rounded-4xl p-6">
+          <div className="glass flex items-center gap-3 rounded-2xl px-4">
             <Search size={18} className="text-moonberry-mauve" />
             <input
               autoFocus
               value={query}
               onChange={(event) => setQuery(event.target.value)}
-              placeholder="Search perfumes, skincare, makeup..."
+              placeholder="Search perfumes, nails, hair care..."
               className="input-field h-12 border-0 bg-transparent shadow-none focus:border-0 focus:shadow-none"
             />
             <button type="button" onClick={handleClose} aria-label="Close search">
@@ -331,7 +333,7 @@ export function SearchModal({
                     setQuery('')
                     onSelectProduct(product.slug)
                   }}
-                  className="flex w-full items-center gap-4 rounded-2xl border border-moonberry-rose/20 bg-white/80 p-3 text-left transition hover:border-moonberry-rose/35 hover:shadow-sm"
+                  className="glass flex w-full items-center gap-4 rounded-2xl p-3 text-left transition hover:-translate-y-0.5 hover:shadow-md"
                 >
                   <img src={product.images[0]} alt={product.name} className="h-16 w-14 rounded-xl object-cover" />
                   <div className="flex-1">
@@ -376,7 +378,7 @@ export function CartDrawer({
         onClick={onClose}
       />
       <aside
-        className={`absolute right-0 top-0 flex h-full w-full max-w-md flex-col border-l border-moonberry-rose/20 bg-[#fffcfb]/95 p-6 shadow-[-12px_0_40px_rgba(74,59,61,0.08)] backdrop-blur-xl transition-transform duration-300 ${
+        className={`glass-strong absolute right-0 top-0 flex h-full w-full max-w-md flex-col border-l border-white/50 p-6 shadow-[-12px_0_40px_rgba(74,59,61,0.08)] transition-transform duration-300 ${
           open ? 'translate-x-0' : 'translate-x-full'
         }`}
       >
@@ -388,13 +390,13 @@ export function CartDrawer({
         </div>
         <div className="flex-1 space-y-5 overflow-y-auto pr-1">
           {items.length === 0 && (
-            <div className="empty-state border-dashed bg-white/50 p-8">
+            <div className="empty-state border-dashed p-8">
               <p className="font-serif text-2xl text-moonberry-brown">Your bag is empty</p>
               <p className="mt-2 text-sm text-moonberry-mauve">Discover something beautiful to add.</p>
             </div>
           )}
           {items.map((item) => (
-            <div key={item.lineId || item.id} className="flex gap-4 rounded-2xl border border-moonberry-rose/20 bg-white/80 p-4">
+            <div key={item.lineId || item.id} className="glass flex gap-4 rounded-2xl p-4">
               <img src={item.image} alt={item.name} className="h-24 w-20 rounded-xl object-cover" />
               <div className="flex-1">
                 <h4 className="font-serif text-lg leading-tight text-moonberry-brown">{item.name}</h4>
@@ -479,14 +481,13 @@ export function CartDrawer({
 
 export function Footer() {
   return (
-    <footer className="relative mt-28 overflow-hidden border-t border-moonberry-rose/20 bg-white/80">
+    <footer className="glass-strong relative mt-28 overflow-hidden border-t border-white/40">
       <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-moonberry-blush to-transparent" />
       <div className="section-shell grid gap-10 py-16 md:grid-cols-2 lg:grid-cols-4">
         <div className="lg:col-span-1">
           <BrandMark size="md" />
           <p className="mt-4 max-w-xs text-sm leading-relaxed text-moonberry-mauve">
-            A modern beauty brand crafted for all identities, with refined self-care rituals and
-            boutique-quality formulations.
+            Perfumes, nails, nail accessories, and hair care — curated with boutique-quality care.
           </p>
         </div>
         <div>
@@ -497,11 +498,13 @@ export function Footer() {
                 All products
               </Link>
             </li>
-            <li>
-              <Link to="/collections" className="transition hover:text-moonberry-rose">
-                Collections
-              </Link>
-            </li>
+            {SHOP_CATEGORIES.map((cat) => (
+              <li key={cat.id}>
+                <Link to={`/shop?category=${cat.id}`} className="transition hover:text-moonberry-rose">
+                  {cat.label}
+                </Link>
+              </li>
+            ))}
             <li>
               <Link to="/about" className="transition hover:text-moonberry-rose">
                 About us
@@ -548,7 +551,7 @@ export function Footer() {
           </p>
         </div>
       </div>
-      <div className="border-t border-moonberry-rose/15 bg-moonberry-cream/40">
+      <div className="glass-strong border-t border-white/40">
         <div className="section-shell flex flex-col items-center justify-between gap-2 py-5 text-center text-xs text-moonberry-mauve sm:flex-row sm:text-left">
           <p>&copy; {new Date().getFullYear()} Moonberry. All rights reserved.</p>
           <p className="tracking-wide">Crafted with care in India</p>
