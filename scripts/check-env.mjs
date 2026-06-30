@@ -24,6 +24,9 @@ const status = await handleHealthCheck()
 
 console.log('MoonBerry checkout readiness\n')
 console.log(`  Storefront API : ${status.storefront ? 'OK' : 'MISSING'}`)
+if (status.storefront) {
+  console.log('  Hosted proxy   : OK (uses SHOPIFY_STORE_DOMAIN + SHOPIFY_STOREFRONT_TOKEN)')
+}
 console.log(`  Admin API      : ${status.admin ? 'OK' : 'MISSING (required for COD)'}`)
 if (status.admin) console.log(`  Admin auth     : ${status.adminAuth}`)
 if (status.adminAuth === 'dev_dashboard') {

@@ -52,7 +52,7 @@ export function PageHero({ eyebrow, title, description, align = 'left', image, i
         <img
           src={image}
           alt={imageAlt || title}
-          className="soft-shadow h-[min(320px,50vh)] w-full rounded-4xl object-cover md:h-[min(420px,55vh)]"
+          className="soft-shadow h-[min(320px,50vh)] w-full rounded-4xl object-cover object-center md:h-[min(420px,55vh)]"
         />
       </header>
     )

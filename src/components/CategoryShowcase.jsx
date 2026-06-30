@@ -24,33 +24,67 @@ export function CategoryShowcase({ products = [] }) {
           const Icon = cat.icon
           const count = counts[cat.id] || 0
           const categoryPhoto = getSitePhoto(cat.id)
+
           return (
             <Link
               key={cat.id}
               to={`/shop?category=${cat.id}`}
-              className="glass-category group relative overflow-hidden rounded-3xl p-6 transition duration-500 hover:-translate-y-1"
+              className="group relative flex min-h-[19rem] flex-col overflow-hidden rounded-3xl border border-white/55 shadow-[0_10px_36px_rgba(74,59,61,0.08)] transition duration-500 hover:-translate-y-1"
             >
               {categoryPhoto ? (
                 <img
                   src={categoryPhoto}
                   alt=""
                   aria-hidden
-                  className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-35 transition duration-500 group-hover:opacity-45"
+                  className="absolute inset-0 h-full w-full object-cover object-center transition duration-700 group-hover:scale-[1.04]"
+                  loading="lazy"
                 />
-              ) : null}
+              ) : (
+                <div className={`absolute inset-0 bg-gradient-to-br ${cat.gradient}`} />
+              )}
+
               <div
-                className={`pointer-events-none absolute inset-0 bg-gradient-to-br opacity-80 ${cat.gradient} transition duration-500 group-hover:opacity-100`}
+                className={`absolute inset-0 transition duration-500 ${
+                  categoryPhoto
+                    ? 'bg-gradient-to-t from-moonberry-brown/75 via-moonberry-brown/20 to-transparent group-hover:from-moonberry-brown/65'
+                    : `bg-gradient-to-br opacity-95 ${cat.gradient}`
+                }`}
               />
-              <div className="relative">
-                <span className="glass-icon inline-flex">
-                  <Icon size={20} aria-hidden />
+
+              <div
+                className={`relative mt-auto p-6 ${
+                  categoryPhoto ? 'text-white' : 'text-moonberry-brown'
+                }`}
+              >
+                <span
+                  className={`inline-flex h-10 w-10 items-center justify-center rounded-2xl backdrop-blur-sm ${
+                    categoryPhoto
+                      ? 'border border-white/30 bg-white/15 text-white'
+                      : 'glass-icon'
+                  }`}
+                >
+                  <Icon size={18} aria-hidden />
                 </span>
-                <h3 className="mt-5 font-serif text-2xl text-moonberry-brown">{cat.label}</h3>
-                <p className="mt-2 text-sm leading-relaxed text-moonberry-mauve">{cat.description}</p>
-                <p className="mt-4 text-[10px] uppercase tracking-[0.18em] text-moonberry-mauve/80">
+                <h3 className="mt-4 font-serif text-2xl">{cat.label}</h3>
+                <p
+                  className={`mt-2 text-sm leading-relaxed ${
+                    categoryPhoto ? 'text-white/80' : 'text-moonberry-mauve'
+                  }`}
+                >
+                  {cat.description}
+                </p>
+                <p
+                  className={`mt-4 text-[10px] uppercase tracking-[0.18em] ${
+                    categoryPhoto ? 'text-white/60' : 'text-moonberry-mauve/80'
+                  }`}
+                >
                   {count > 0 ? `${count} product${count === 1 ? '' : 's'}` : 'Explore'}
                 </p>
-                <span className="mt-5 inline-flex items-center gap-1 text-[11px] font-medium uppercase tracking-[0.14em] text-moonberry-brown opacity-0 transition duration-300 group-hover:opacity-100">
+                <span
+                  className={`mt-4 inline-flex items-center gap-1 text-[11px] font-medium uppercase tracking-[0.14em] opacity-0 transition duration-300 group-hover:opacity-100 ${
+                    categoryPhoto ? 'text-white/90' : 'text-moonberry-brown'
+                  }`}
+                >
                   Shop now
                   <ArrowUpRight size={14} aria-hidden />
                 </span>

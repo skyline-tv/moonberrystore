@@ -12,7 +12,7 @@ cp .env.example .env   # fill in Shopify tokens
 npm run dev
 ```
 
-`npm run dev` serves the storefront and `/api/checkout/*` (same handlers as Vercel).
+`npm run dev` serves the storefront, `/shopify-storefront` (Shopify proxy), and `/api/checkout/*` — same routes as Vercel.
 
 ## Build
 
@@ -25,9 +25,11 @@ npm run preview
 
 See `.env.example` and [LAUNCH.md](./LAUNCH.md) for the full list.
 
-Minimum for local browsing: `VITE_SHOPIFY_STORE_DOMAIN`, `VITE_SHOPIFY_STOREFRONT_TOKEN`.
+**Local browsing:** `VITE_SHOPIFY_STORE_DOMAIN`, `VITE_SHOPIFY_STOREFRONT_TOKEN`.
 
-Minimum for checkout (COD): also set `SHOPIFY_ADMIN_ACCESS_TOKEN` on the server (Vercel env or local `.env`).
+**Checkout (COD):** `SHOPIFY_CLIENT_ID` + `SHOPIFY_CLIENT_SECRET` (Dev Dashboard).
+
+**Hosted storefront:** also set `SHOPIFY_STORE_DOMAIN` and `SHOPIFY_STOREFRONT_TOKEN` on Vercel so `/shopify-storefront` can proxy catalog and cart requests server-side.
 
 ## Custom checkout
 

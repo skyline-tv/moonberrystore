@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { CheckCircle2, Heart, Mail, MapPin, Phone, Sparkles } from 'lucide-react'
-import { BrandMark } from '../components/BrandMark'
 import { CategoryShowcase } from '../components/CategoryShowcase'
+import { HeroCategoryCarousel } from '../components/HeroCategoryCarousel'
 import {
   Breadcrumbs,
   CheckoutSection,
@@ -28,10 +28,8 @@ export function HomePage({ onQuickAdd, products = [] }) {
 
   return (
     <div>
-      <section className="section-shell grid min-h-[80vh] items-center gap-12 py-14 md:grid-cols-2 md:py-20">
-        <div className="animate-fade-in-up hero-panel">
-          <div className="pointer-events-none absolute -left-8 -top-16 h-52 w-52 rounded-full bg-white/40 blur-2xl" />
-          <div className="pointer-events-none absolute -bottom-16 right-0 h-64 w-64 rounded-full bg-moonberry-mauve/25 blur-3xl" />
+      <section className="section-shell grid gap-8 py-10 md:grid-cols-2 md:items-center md:gap-10 lg:gap-12 lg:py-14">
+        <div className="animate-fade-in-up self-start md:max-w-xl md:py-2">
           <p className="eyebrow">Moonberry</p>
           <h1 className="editorial-heading">
             Perfumes, Nails &amp; Hair Care — Crafted for You.
@@ -40,7 +38,7 @@ export function HomePage({ onQuickAdd, products = [] }) {
             Fine fragrances, nail colour, nail accessories, and hair care rituals — quietly luxurious,
             made for everyday beauty.
           </p>
-          <div className="mt-10 flex flex-wrap gap-3">
+          <div className="mt-8 flex flex-wrap gap-3">
             <Link to="/shop" className="btn-primary">
               Shop Now
             </Link>
@@ -49,17 +47,15 @@ export function HomePage({ onQuickAdd, products = [] }) {
             </Link>
           </div>
         </div>
-        <div className="animate-fade-in-up animate-delay-200 relative flex items-center justify-center">
+        <div className="animate-fade-in-up animate-delay-200 w-full self-center">
           {heroImage ? (
             <img
               src={heroImage}
               alt="Moonberry"
-              className="soft-shadow h-[min(580px,68vh)] w-full rounded-4xl object-cover"
+              className="soft-shadow aspect-[4/5] w-full max-h-[min(460px,58vh)] rounded-4xl object-cover object-center"
             />
           ) : (
-            <div className="glass-strong flex h-[min(420px,55vh)] w-full items-center justify-center rounded-4xl">
-              <BrandMark size="xl" />
-            </div>
+            <HeroCategoryCarousel products={products} />
           )}
         </div>
       </section>
@@ -165,6 +161,7 @@ export function ShopPage({ onQuickAdd, products = [] }) {
   }
 
   const activeMeta = getCategoryById(activeCategory)
+  const shopHeroImage = activeMeta ? getSitePhoto(activeMeta.id) : getSitePhoto('shop')
 
   const visibleProducts = useMemo(() => {
     const filteredByCategory =
@@ -201,8 +198,8 @@ export function ShopPage({ onQuickAdd, products = [] }) {
             ? activeMeta.description
             : 'Perfumes, nails, nail accessories, and hair care — browse the full Moonberry catalog.'
         }
-        image={getSitePhoto('shop')}
-        imageAlt="Moonberry shop"
+        image={shopHeroImage}
+        imageAlt={activeMeta ? activeMeta.label : 'Moonberry shop'}
       />
       <div className="glass-strong mb-8 grid gap-3 rounded-3xl p-4 md:grid-cols-[1fr_auto]">
         <input

@@ -1,12 +1,5 @@
 import { resolveCategory } from './categories.js'
-
-function normalizeShopifyStoreDomain(raw) {
-  if (!raw) return ''
-  let d = String(raw).trim()
-  d = d.replace(/^https?:\/\//i, '')
-  d = d.split('/')[0] || ''
-  return d.replace(/\.$/, '').toLowerCase()
-}
+import { normalizeShopifyStoreDomain } from '../../shared/shopify-domain.js'
 
 const storeDomain = normalizeShopifyStoreDomain(import.meta.env.VITE_SHOPIFY_STORE_DOMAIN)
 const storefrontToken = import.meta.env.VITE_SHOPIFY_STOREFRONT_TOKEN?.trim()
@@ -14,16 +7,23 @@ const apiVersion = import.meta.env.VITE_SHOPIFY_API_VERSION || '2025-01'
 
 export const hasShopifyConfig = Boolean(storeDomain && storefrontToken)
 
-/** Same-origin proxy: Vite in dev, Vercel API on production (avoids browser blocks on myshopify.com). */
+/** Same-origin proxy: dev middleware + Vercel API (avoids browser blocks on myshopify.com). */
 const useStorefrontProxy =
   import.meta.env.VITE_SHOPIFY_USE_PROXY !== 'false' &&
   import.meta.env.VITE_SHOPIFY_DEV_PROXY !== 'false'
 
 function storefrontGraphqlEndpoint() {
-  if (useStorefrontProxy) {
-    return '/shopify-storefront'
-  }
+  if (useStorefrontProxy) return '/shopify-storefront'
   return `https://${storeDomain}/api/${apiVersion}/graphql.json`
+}
+
+async function readProxyError(response) {
+  try {
+    const json = await response.json()
+    return json.errors?.[0]?.message || json.error || null
+  } catch {
+    return null
+  }
 }
 
 export async function shopifyRequest(query, variables = {}, options = {}) {
@@ -53,15 +53,16 @@ export async function shopifyRequest(query, variables = {}, options = {}) {
     const isNetwork = err instanceof TypeError || String(err?.message).includes('fetch')
     if (isNetwork) {
       const hint = useStorefrontProxy
-        ? `Could not reach Shopify via the storefront proxy. Local: confirm VITE_SHOPIFY_STORE_DOMAIN and restart \`npm run dev\`. Hosted: set SHOPIFY_STORE_DOMAIN and SHOPIFY_STOREFRONT_TOKEN in Vercel, redeploy, then retry.`
-        : `Could not reach https://${storeDomain} (network or browser blocked the request). Prefer the default proxy (do not set VITE_SHOPIFY_USE_PROXY=false).`
+        ? 'Could not reach the storefront proxy. Local: restart `npm run dev`. Hosted: set SHOPIFY_STORE_DOMAIN and SHOPIFY_STOREFRONT_TOKEN on Vercel, then redeploy.'
+        : `Could not reach https://${storeDomain}. Keep the default proxy enabled (do not set VITE_SHOPIFY_USE_PROXY=false).`
       throw new Error(`Failed to fetch: ${hint}`, { cause: err })
     }
     throw err
   }
 
   if (!response.ok) {
-    throw new Error(`Shopify request failed with ${response.status}`)
+    const detail = await readProxyError(response)
+    throw new Error(detail || `Shopify request failed (${response.status}).`)
   }
 
   const json = await response.json()

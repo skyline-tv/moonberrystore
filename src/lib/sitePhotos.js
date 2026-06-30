@@ -6,9 +6,11 @@
  *   story: 'story.webp'
  *   categories.perfumes: 'categories/perfumes.jpg'
  *
- * Leave a slot as '' to skip it (gradient / logo fallback is used; hero does not use Shopify images).
+ * Leave a slot as '' to skip it (gradient / product image fallback is used).
  * Optional env override: VITE_SITE_PHOTO_HERO=/photos/my-hero.jpg
  */
+
+import { SHOP_CATEGORIES } from './categories.js'
 
 const PHOTOS_BASE = '/photos'
 
@@ -20,9 +22,9 @@ export const SITE_PHOTOS = {
   contact: '',
   categories: {
     perfumes: '',
-    nails: '',
+    nails: 'categories/nails.jpeg',
     'nail-accessories': '',
-    'hair-care': '',
+    'hair-care': 'categories/hair-care.jpeg',
   },
 }
 
@@ -66,4 +68,23 @@ export function getSitePhoto(slot, fallback = null) {
 
 export function hasSitePhoto(slot) {
   return Boolean(getSitePhoto(slot))
+}
+
+/**
+ * Hero carousel slides — one per shop category.
+ * Uses category site photo, then first product image in that category, then gradient fallback.
+ */
+export function getCategoryHeroSlides(products = []) {
+  return SHOP_CATEGORIES.map((cat) => {
+    const sitePhoto = getSitePhoto(cat.id)
+    const productImage = products.find((product) => product.categoryId === cat.id)?.images?.[0]
+    return {
+      id: cat.id,
+      label: cat.label,
+      src: sitePhoto || productImage || null,
+      gradient: cat.gradient,
+      shopUrl: `/shop?category=${cat.id}`,
+      objectPosition: cat.id === 'nails' ? 'center 20%' : 'center center',
+    }
+  })
 }

@@ -4,7 +4,7 @@ export async function proxyStorefrontRequest(req) {
   const { storeDomain, storefrontToken, apiVersion, hasStorefront } = getServerConfig()
   if (!hasStorefront) {
     throw new Error(
-      'Shopify Storefront API is not configured on the server. Set SHOPIFY_STORE_DOMAIN and SHOPIFY_STOREFRONT_TOKEN in Vercel.',
+      'Shopify Storefront API is not configured on the server. Set SHOPIFY_STORE_DOMAIN and SHOPIFY_STOREFRONT_TOKEN.',
     )
   }
 

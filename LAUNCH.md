@@ -24,8 +24,8 @@ Customers stay on Moonberry for the entire checkout — contact, address, and pa
 |----------|----------|
 | `VITE_SHOPIFY_STORE_DOMAIN` | Yes |
 | `VITE_SHOPIFY_STOREFRONT_TOKEN` | Yes |
-| `SHOPIFY_STORE_DOMAIN` | Yes |
-| `SHOPIFY_STOREFRONT_TOKEN` | Yes |
+| `SHOPIFY_STORE_DOMAIN` | Yes (proxy + checkout) |
+| `SHOPIFY_STOREFRONT_TOKEN` | Yes (proxy + checkout) |
 | `SHOPIFY_CLIENT_ID` | Yes (Dev Dashboard) |
 | `SHOPIFY_CLIENT_SECRET` | Yes (Dev Dashboard) |
 
@@ -67,7 +67,7 @@ Or: `npx vercel --prod`
 | Feature | Where |
 |---------|--------|
 | Product pages, cart, checkout UI | Vercel (SPA) |
-| Catalog, cart sync, login | Shopify Storefront API |
+| Catalog, cart sync, login | Shopify Storefront API via `/shopify-storefront` proxy |
 | Create order | Vercel `/api/checkout` → Shopify Admin draft order |
 | COD | Moonberry form → Shopify order (pay on delivery) |
 | UPI / Card | Moonberry form → Shopify invoice page → Shopify Payments |

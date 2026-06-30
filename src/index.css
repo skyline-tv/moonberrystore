@@ -244,7 +244,7 @@ select:focus-visible {
 }
 
 .editorial-heading {
-  @apply font-serif text-4xl leading-[0.95] tracking-tight text-moonberry-brown md:text-6xl lg:text-[4.25rem];
+  @apply font-serif text-4xl leading-[1.02] tracking-tight text-moonberry-brown md:text-5xl lg:text-[3.5rem];
 }
 
 .soft-shadow {

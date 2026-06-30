@@ -1,10 +1,4 @@
-function normalizeShopifyStoreDomain(raw) {
-  if (!raw) return ''
-  let d = String(raw).trim()
-  d = d.replace(/^https?:\/\//i, '')
-  d = d.split('/')[0] || ''
-  return d.replace(/\.$/, '').toLowerCase()
-}
+import { normalizeShopifyStoreDomain } from '../shared/shopify-domain.js'
 
 export function getServerConfig() {
   const storeDomain = normalizeShopifyStoreDomain(
