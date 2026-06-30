@@ -1,5 +1,6 @@
 import { handleCheckoutCreate } from './checkout.js'
 import { handleHealthCheck } from './health.js'
+import { handleStorefrontProxy } from './shopify-storefront-proxy.js'
 import { handleApiRoute } from './http.js'
 
 async function handleCheckoutVerifyDeprecated() {
@@ -10,6 +11,8 @@ const routes = {
   '/api/health': handleHealthCheck,
   '/api/checkout/create': handleCheckoutCreate,
   '/api/checkout/verify': handleCheckoutVerifyDeprecated,
+  '/api/shopify-storefront': handleStorefrontProxy,
+  '/shopify-storefront': handleStorefrontProxy,
 }
 
 function applyEnvToProcess(env) {
@@ -43,6 +46,11 @@ export function moonberryApiDevPlugin(env) {
             res.setHeader('Content-Type', 'application/json')
             res.end(JSON.stringify({ error: error?.message || 'Health check failed.' }))
           }
+          return
+        }
+
+        if (url === '/api/shopify-storefront' || url === '/shopify-storefront') {
+          await handler(req, res)
           return
         }
 

@@ -14,12 +14,13 @@ const apiVersion = import.meta.env.VITE_SHOPIFY_API_VERSION || '2025-01'
 
 export const hasShopifyConfig = Boolean(storeDomain && storefrontToken)
 
-/** In dev, call the Vite proxy (same origin) to avoid browser "Failed to fetch" from CORS / PNA. */
-const useDevStorefrontProxy =
-  import.meta.env.DEV && import.meta.env.VITE_SHOPIFY_DEV_PROXY !== 'false'
+/** Same-origin proxy: Vite in dev, Vercel API on production (avoids browser blocks on myshopify.com). */
+const useStorefrontProxy =
+  import.meta.env.VITE_SHOPIFY_USE_PROXY !== 'false' &&
+  import.meta.env.VITE_SHOPIFY_DEV_PROXY !== 'false'
 
 function storefrontGraphqlEndpoint() {
-  if (useDevStorefrontProxy) {
+  if (useStorefrontProxy) {
     return '/shopify-storefront'
   }
   return `https://${storeDomain}/api/${apiVersion}/graphql.json`
@@ -51,9 +52,9 @@ export async function shopifyRequest(query, variables = {}, options = {}) {
   } catch (err) {
     const isNetwork = err instanceof TypeError || String(err?.message).includes('fetch')
     if (isNetwork) {
-      const hint = useDevStorefrontProxy
-        ? `Could not reach Shopify via the dev server proxy. Confirm VITE_SHOPIFY_STORE_DOMAIN is your *.myshopify.com hostname, restart \`npm run dev\`, and try again.`
-        : `Could not reach https://${storeDomain} (network or browser blocked the request). Use your store's myshopify.com domain in VITE_SHOPIFY_STORE_DOMAIN, try another network or disable extensions, or set VITE_SHOPIFY_DEV_PROXY=false only after fixing CORS. For local dev, keep the default proxy on and restart the dev server.`
+      const hint = useStorefrontProxy
+        ? `Could not reach Shopify via the storefront proxy. Local: confirm VITE_SHOPIFY_STORE_DOMAIN and restart \`npm run dev\`. Hosted: set SHOPIFY_STORE_DOMAIN and SHOPIFY_STOREFRONT_TOKEN in Vercel, redeploy, then retry.`
+        : `Could not reach https://${storeDomain} (network or browser blocked the request). Prefer the default proxy (do not set VITE_SHOPIFY_USE_PROXY=false).`
       throw new Error(`Failed to fetch: ${hint}`, { cause: err })
     }
     throw err

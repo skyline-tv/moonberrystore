@@ -2,6 +2,10 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "rewrites": [
     {
+      "source": "/shopify-storefront",
+      "destination": "/api/shopify-storefront"
+    },
+    {
       "source": "/((?!api/).*)",
       "destination": "/index.html"
     }
