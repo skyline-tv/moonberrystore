@@ -25,7 +25,8 @@ import {
   updateCartBuyerIdentity,
   updateCartLine,
 } from './lib/shopify'
-import { createCheckoutOrder } from './lib/checkoutApi'
+import { createCheckoutOrder, verifyCheckoutPayment } from './lib/checkoutApi'
+import { openRazorpayCheckout } from './lib/razorpay'
 import {
   AboutPage,
   CheckoutPage,
@@ -523,14 +524,19 @@ function App() {
       let orderNumber = createResult.orderNumber
       let shopifyOrderId = createResult.shopifyOrderId
 
-      if (createResult.status === 'shopify_payment') {
+      if (createResult.status === 'razorpay_payment') {
         try {
-          await clearShopifyCartLines()
+          const payment = await openRazorpayCheckout({ order: createResult, customer })
+          const verifiedOrder = await verifyCheckoutPayment({
+            draftOrderId: createResult.draftOrderId,
+            ...payment,
+          })
+          orderNumber = verifiedOrder.orderNumber
+          shopifyOrderId = verifiedOrder.shopifyOrderId
         } catch (error) {
-          console.warn('Redirecting to Shopify payment but cart could not be cleared.', error)
+          if (error instanceof Error) throw error
+          throw new Error('Could not verify your payment. Please contact us before trying again.', { cause: error })
         }
-        window.location.assign(createResult.invoiceUrl)
-        return { redirected: true }
       }
 
       try {

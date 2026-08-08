@@ -81,6 +81,7 @@ const PRODUCTS_QUERY = `
           title
           handle
           description
+          descriptionHtml
           productType
           tags
           priceRange {
@@ -285,6 +286,7 @@ function mapProduct(node) {
     slug: node.handle,
     name: node.title,
     description: node.description || 'Thoughtfully selected for your everyday beauty ritual.',
+    descriptionHtml: node.descriptionHtml || '',
     categoryId,
     category,
     collection: category,
@@ -294,7 +296,6 @@ function mapProduct(node) {
     variantChoices,
     notes: node.tags.slice(0, 4),
     images: node.images.edges.map((edge) => edge.node.url),
-    shadeHex: ['#b08d92', '#f5f1ee'],
     bestSeller: node.tags.some((tag) => tag.toLowerCase().includes('best')),
     variantId: firstVariant?.id,
   }

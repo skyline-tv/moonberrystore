@@ -337,6 +337,31 @@ select:focus-visible {
   @apply font-serif text-3xl text-moonberry-brown md:text-4xl;
 }
 
+.product-description {
+  @apply space-y-4 whitespace-pre-line text-[15px] leading-relaxed md:text-base;
+}
+
+.product-description p {
+  @apply whitespace-pre-line;
+}
+
+.product-description ul {
+  @apply list-inside list-disc space-y-1;
+}
+
+.product-description ol {
+  @apply list-inside list-decimal space-y-1;
+}
+
+.product-description h2,
+.product-description h3 {
+  @apply pt-2 font-serif text-2xl text-moonberry-brown;
+}
+
+.product-description a {
+  @apply text-moonberry-brown underline underline-offset-[3px] hover:text-moonberry-rose;
+}
+
 .skeleton {
   background: linear-gradient(
     90deg,

@@ -2,23 +2,6 @@ import { Link } from 'react-router-dom'
 import { ShoppingBag } from 'lucide-react'
 import { formatINR } from '../lib/currency'
 
-function SwatchRow({ shades = [] }) {
-  if (!shades.length) return null
-
-  return (
-    <div className="mt-3 flex items-center gap-1.5">
-      {shades.slice(0, 4).map((shade) => (
-        <span
-          key={shade}
-          className="h-4 w-4 rounded-full border border-white/90 shadow-sm ring-1 ring-moonberry-rose/15"
-          style={{ backgroundColor: shade }}
-          aria-hidden
-        />
-      ))}
-    </div>
-  )
-}
-
 export function ProductCard({ product, onQuickAdd }) {
   const hasDiscount = product.compareAtPrice && product.compareAtPrice > product.price
   const discountPercent = hasDiscount
@@ -79,7 +62,6 @@ export function ProductCard({ product, onQuickAdd }) {
             ) : null}
           </div>
         </div>
-        <SwatchRow shades={product.shadeHex} />
         <button type="button" onClick={() => onQuickAdd(product)} className="btn-ghost mt-4 w-full">
           Add to Bag
         </button>

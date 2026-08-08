@@ -14,10 +14,7 @@ export function HeroCategoryCarousel({ products = [] }) {
   )
   const [active, setActive] = useState(0)
   const [paused, setPaused] = useState(false)
-
-  useEffect(() => {
-    setActive(0)
-  }, [slides.length])
+  const activeIndex = slides.length ? active % slides.length : 0
 
   useEffect(() => {
     if (slides.length <= 1 || paused) return undefined
@@ -64,7 +61,7 @@ export function HeroCategoryCarousel({ products = [] }) {
       aria-label="Shop by category"
     >
       {slides.map((slide, index) => {
-        const isActive = index === active
+        const isActive = index === activeIndex
         return (
           <Link
             key={slide.id}
@@ -99,11 +96,11 @@ export function HeroCategoryCarousel({ products = [] }) {
             key={slide.id}
             type="button"
             role="tab"
-            aria-selected={index === active}
+            aria-selected={index === activeIndex}
             aria-label={slide.label}
             onClick={() => setActive(index)}
             className={`rounded-full transition-all duration-300 ${
-              index === active
+              index === activeIndex
                 ? 'h-1.5 w-7 bg-white/95'
                 : 'h-1.5 w-1.5 bg-white/45 hover:bg-white/70'
             }`}

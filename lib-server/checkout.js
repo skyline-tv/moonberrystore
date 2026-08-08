@@ -1,6 +1,7 @@
 import { calculateOrderTotals } from './pricing.js'
 import { completeDraftOrder, createDraftOrder } from './shopify-admin.js'
 import { fetchStorefrontCart } from './shopify-storefront.js'
+import { createRazorpayOrder, verifyRazorpayPayment } from './razorpay.js'
 
 function validateCustomer(customer) {
   if (!customer?.email?.includes('@')) throw new Error('Valid email is required.')
@@ -20,7 +21,7 @@ export async function handleCheckoutCreate(body) {
   const { cartId, customerAccessToken, customer, paymentMethod } = body || {}
 
   if (!cartId) throw new Error('Cart ID is required.')
-  if (!['cod', 'shopify'].includes(paymentMethod)) {
+  if (!['cod', 'razorpay'].includes(paymentMethod)) {
     throw new Error('Unsupported payment method.')
   }
 
@@ -50,17 +51,42 @@ export async function handleCheckoutCreate(body) {
     }
   }
 
-  if (!draftOrder.invoiceUrl) {
-    throw new Error(
-      'Shopify payment link is not available. Enable Shopify Payments in Admin → Settings → Payments.',
-    )
-  }
+  const payment = await createRazorpayOrder({
+    amountInr: totals.total,
+    receipt: `moonberry-${draftOrder.name.replace(/[^a-zA-Z0-9-]/g, '').slice(-32)}`,
+    notes: { draftOrderId: draftOrder.id, draftOrderName: draftOrder.name },
+  })
 
   return {
-    status: 'shopify_payment',
-    paymentMethod: 'shopify',
+    status: 'razorpay_payment',
+    paymentMethod: 'razorpay',
     total: totals.total,
     draftOrderName: draftOrder.name,
-    invoiceUrl: draftOrder.invoiceUrl,
+    draftOrderId: draftOrder.id,
+    razorpayOrderId: payment.id,
+    razorpayAmount: payment.amount,
+    razorpayCurrency: payment.currency,
+    razorpayKeyId: payment.keyId,
+  }
+}
+
+export async function handleCheckoutVerify(body) {
+  const { draftOrderId, razorpayOrderId, razorpayPaymentId, razorpaySignature } = body || {}
+  if (!draftOrderId || !razorpayOrderId || !razorpayPaymentId || !razorpaySignature) {
+    throw new Error('Payment verification details are incomplete.')
+  }
+
+  verifyRazorpayPayment({
+    orderId: razorpayOrderId,
+    paymentId: razorpayPaymentId,
+    signature: razorpaySignature,
+  })
+
+  const order = await completeDraftOrder(draftOrderId, { paymentPending: false })
+  return {
+    status: 'completed',
+    orderNumber: order.name,
+    shopifyOrderId: order.legacyResourceId,
+    paymentMethod: 'razorpay',
   }
 }

@@ -16,6 +16,7 @@ import { ProductCard, SectionHeading } from '../components/ProductCard'
 import { formatINR } from '../lib/currency'
 import { calculateOrderTotals } from '../lib/pricing'
 import { fetchCheckoutReadiness } from '../lib/checkoutApi'
+import { sanitizeProductDescription } from '../lib/productDescription'
 import { pickVariantForOption } from '../lib/shopify'
 import { getCategoryById, SHOP_CATEGORIES } from '../lib/categories'
 import { getSitePhoto } from '../lib/sitePhotos'
@@ -123,22 +124,12 @@ export function HomePage({ onQuickAdd, products = [] }) {
 
 export function ShopPage({ onQuickAdd, products = [] }) {
   const [searchParams, setSearchParams] = useSearchParams()
-  const initialCategory = getCategoryById(searchParams.get('category'))
+  const activeCategory = getCategoryById(searchParams.get('category'))
     ? searchParams.get('category')
     : 'All'
 
-  const [activeCategory, setActiveCategory] = useState(initialCategory)
   const [query, setQuery] = useState('')
   const [sortBy, setSortBy] = useState('featured')
-
-  useEffect(() => {
-    const param = searchParams.get('category')
-    if (param && getCategoryById(param)) {
-      setActiveCategory(param)
-    } else if (!param) {
-      setActiveCategory((prev) => (getCategoryById(prev) ? prev : 'All'))
-    }
-  }, [searchParams])
 
   const categoryFilters = useMemo(
     () => [
@@ -150,7 +141,6 @@ export function ShopPage({ onQuickAdd, products = [] }) {
   )
 
   const setCategory = (categoryId) => {
-    setActiveCategory(categoryId)
     const next = new URLSearchParams(searchParams)
     if (categoryId === 'All') {
       next.delete('category')
@@ -279,6 +269,10 @@ export function ProductPage({ onQuickAdd, products = [] }) {
       selection.slug === product.slug ? selection.selectedSize : product.sizes[0] || 'Standard'
     return pickVariantForOption(product, sel)
   }, [product, selection.slug, selection.selectedSize])
+  const productDescription = useMemo(
+    () => sanitizeProductDescription(product?.descriptionHtml, product?.description),
+    [product?.description, product?.descriptionHtml],
+  )
 
   if (!product) {
     return (
@@ -325,15 +319,16 @@ export function ProductPage({ onQuickAdd, products = [] }) {
           { label: product.name },
         ]}
       />
-      <div className="grid gap-10 lg:grid-cols-2 lg:gap-14">
+      <div className="grid gap-10 lg:grid-cols-2 lg:items-start lg:gap-14">
         <div className="glass-strong rounded-4xl p-2">
           <img src={activeImage} alt={product.name} className="product-gallery-main rounded-3xl" />
           {product.images.length > 1 ? (
             <div className="mt-4 grid grid-cols-4 gap-3 px-2 pb-2">
-              {product.images.map((image) => (
+              {product.images.map((image, index) => (
                 <button
                   key={image}
                   type="button"
+                  aria-label={`View image ${index + 1} of ${product.name}`}
                   className={`overflow-hidden rounded-xl border-2 transition ${
                     activeImage === image ? 'border-moonberry-brown' : 'border-transparent opacity-80 hover:opacity-100'
                   }`}
@@ -370,19 +365,7 @@ export function ProductPage({ onQuickAdd, products = [] }) {
           {hasDiscount ? (
             <p className="mt-3 text-sm text-moonberry-rose">You save {formatINR(savings)}</p>
           ) : null}
-          <p className="mt-2 text-sm text-moonberry-mauve">Inclusive of estimated GST</p>
-          <p className="mt-6 leading-relaxed text-moonberry-mauve">{product.description}</p>
-          <div className="mt-4 flex items-center gap-2">
-            {product.shadeHex?.map((shade) => (
-              <span
-                key={shade}
-                className="h-5 w-5 rounded-full border border-white/90 shadow-sm"
-                style={{ backgroundColor: shade }}
-                title={shade}
-              />
-            ))}
-          </div>
-
+          <p className="mt-2 text-sm text-moonberry-mauve">Inclusive of all taxes</p>
           {product.sizes.length > 1 || (product.sizes[0] && product.sizes[0] !== 'Standard') ? (
           <div className="mt-8">
             <p className="mb-3 text-[11px] uppercase tracking-[0.16em] text-moonberry-mauve">Select option</p>
@@ -413,51 +396,60 @@ export function ProductPage({ onQuickAdd, products = [] }) {
           >
             Add to Cart
           </button>
-
-          <div className="mt-8 space-y-3">
-            {product.notes?.length ? (
-              <details className="accordion-luxury">
-                <summary className="cursor-pointer list-none font-medium text-moonberry-brown [&::-webkit-details-marker]:hidden">
-                  Key ingredients &amp; notes
-                </summary>
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {product.notes.map((note) => (
-                    <span
-                      key={note}
-                      className="rounded-full bg-moonberry-cream px-3 py-1 text-xs tracking-wide text-moonberry-brown"
-                    >
-                      {note}
-                    </span>
-                  ))}
-                </div>
-              </details>
-            ) : null}
-            <details className="accordion-luxury">
-              <summary className="cursor-pointer list-none font-medium text-moonberry-brown [&::-webkit-details-marker]:hidden">
-                Shipping &amp; returns
-              </summary>
-              <p className="mt-2 text-sm text-moonberry-mauve">
-                Free shipping above Rs. 999. Easy 7-day returns.{' '}
-                <Link to="/shipping-returns" className="text-moonberry-brown underline underline-offset-2">
-                  Read full policy
-                </Link>
-              </p>
-            </details>
-          </div>
         </div>
       </div>
 
-      <section className="mt-24 border-t border-white/40 pt-20">
-        <SectionHeading eyebrow="Complete the ritual" title="You May Also Like" />
-        <div className="grid gap-5 md:grid-cols-3">
-          {products
-            .filter((item) => item.id !== product.id)
-            .slice(0, 3)
-            .map((item) => (
-              <ProductCard key={item.id} product={item} onQuickAdd={onQuickAdd} />
-            ))}
+      <section className="glass-strong mt-10 rounded-4xl p-8 md:p-10">
+        <p className="eyebrow">About this product</p>
+        <div
+          className="product-description text-moonberry-mauve"
+          dangerouslySetInnerHTML={{ __html: productDescription }}
+        />
+        <div className="mt-8 space-y-3">
+          {product.notes?.length ? (
+            <details className="accordion-luxury">
+              <summary className="cursor-pointer list-none font-medium text-moonberry-brown [&::-webkit-details-marker]:hidden">
+                Key ingredients &amp; notes
+              </summary>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {product.notes.map((note) => (
+                  <span
+                    key={note}
+                    className="rounded-full bg-moonberry-cream px-3 py-1 text-xs tracking-wide text-moonberry-brown"
+                  >
+                    {note}
+                  </span>
+                ))}
+              </div>
+            </details>
+          ) : null}
+          <details className="accordion-luxury">
+            <summary className="cursor-pointer list-none font-medium text-moonberry-brown [&::-webkit-details-marker]:hidden">
+              Shipping &amp; returns
+            </summary>
+            <p className="mt-2 text-sm text-moonberry-mauve">
+              Free shipping above Rs. 999. Damage claims require a complete unboxing video.{' '}
+              <Link to="/shipping-returns" className="text-moonberry-brown underline underline-offset-2">
+                Read full policy
+              </Link>
+            </p>
+          </details>
         </div>
       </section>
+
+      {products.filter((item) => item.id !== product.id).length > 0 ? (
+        <section className="mt-24 border-t border-white/40 pt-20">
+          <SectionHeading eyebrow="Complete the ritual" title="You May Also Like" />
+          <div className="grid gap-5 md:grid-cols-3">
+            {products
+              .filter((item) => item.id !== product.id)
+              .slice(0, 3)
+              .map((item) => (
+                <ProductCard key={item.id} product={item} onQuickAdd={onQuickAdd} />
+              ))}
+          </div>
+        </section>
+      ) : null}
 
       <div className="glass-strong fixed inset-x-0 bottom-0 z-30 border-t border-white/40 p-3 backdrop-blur-xl md:hidden">
         <button type="button" className="btn-primary w-full" onClick={handleAddToCart}>
@@ -579,6 +571,9 @@ export function ContactPage() {
         >
           <div className="space-y-4">
             <input
+              aria-label="Full name"
+              autoComplete="name"
+              required
               placeholder="Full Name"
               value={form.name}
               onChange={(event) => {
@@ -588,6 +583,10 @@ export function ContactPage() {
               className="input-field"
             />
             <input
+              aria-label="Email address"
+              type="email"
+              autoComplete="email"
+              required
               placeholder="Email Address"
               value={form.email}
               onChange={(event) => {
@@ -597,6 +596,8 @@ export function ContactPage() {
               className="input-field"
             />
             <textarea
+              aria-label="Your message"
+              required
               placeholder="Your message"
               rows={5}
               value={form.message}
@@ -668,7 +669,7 @@ export function CheckoutPage({
   defaultEmail = '',
 }) {
   const totals = calculateOrderTotals(cartItems.map((item) => ({ price: item.price, qty: item.qty })))
-  const { subtotal, shipping, gst, total } = totals
+  const { subtotal, shipping, total } = totals
 
   const [phase, setPhase] = useState('checkout')
   const [orderNumber, setOrderNumber] = useState('')
@@ -685,6 +686,7 @@ export function CheckoutPage({
   const [pincode, setPincode] = useState('')
   const [paymentMethod, setPaymentMethod] = useState('cod')
   const [codReady, setCodReady] = useState(null)
+  const [razorpayReady, setRazorpayReady] = useState(null)
 
   useEffect(() => {
     onRefreshCart?.()
@@ -694,10 +696,16 @@ export function CheckoutPage({
     let cancelled = false
     fetchCheckoutReadiness()
       .then((status) => {
-        if (!cancelled) setCodReady(Boolean(status.codReady))
+        if (!cancelled) {
+          setCodReady(Boolean(status.codReady))
+          setRazorpayReady(Boolean(status.razorpay))
+        }
       })
       .catch(() => {
-        if (!cancelled) setCodReady(false)
+        if (!cancelled) {
+          setCodReady(false)
+          setRazorpayReady(false)
+        }
       })
     return () => {
       cancelled = true
@@ -831,6 +839,7 @@ export function CheckoutPage({
                           type="button"
                           className="h-8 w-8 rounded-full border border-moonberry-rose/40 text-sm"
                           onClick={() => onQtyChange(item.id, item.qty - 1)}
+                          aria-label={`Decrease quantity of ${item.name}`}
                         >
                           −
                         </button>
@@ -839,6 +848,7 @@ export function CheckoutPage({
                           type="button"
                           className="h-8 w-8 rounded-full border border-moonberry-rose/40 text-sm"
                           onClick={() => onQtyChange(item.id, item.qty + 1)}
+                          aria-label={`Increase quantity of ${item.name}`}
                         >
                           +
                         </button>
@@ -846,6 +856,7 @@ export function CheckoutPage({
                           type="button"
                           className="ml-auto text-xs text-moonberry-mauve underline"
                           onClick={() => onRemove(item.id)}
+                          aria-label={`Remove ${item.name} from your bag`}
                         >
                           Remove
                         </button>
@@ -970,13 +981,14 @@ export function CheckoutPage({
               <div className="mt-4 flex flex-wrap gap-2">
                 {[
                   { id: 'cod', label: 'Cash on delivery' },
-                  { id: 'shopify', label: 'Pay online (UPI / card)' },
+                  { id: 'razorpay', label: 'Pay online (UPI / card)', disabled: !razorpayReady },
                 ].map((option) => (
                   <button
                     key={option.id}
                     type="button"
+                    disabled={option.disabled}
                     onClick={() => setPaymentMethod(option.id)}
-                    className={`filter-pill ${paymentMethod === option.id ? 'filter-pill-active' : ''}`}
+                    className={`filter-pill ${paymentMethod === option.id ? 'filter-pill-active' : ''} disabled:cursor-not-allowed disabled:opacity-45`}
                   >
                     {option.label}
                   </button>
@@ -989,8 +1001,8 @@ export function CheckoutPage({
                 </p>
               ) : (
                 <p className="mt-4 text-sm text-moonberry-mauve">
-                  After you place the order, you’ll open Shopify’s secure payment page for UPI, cards, and other
-                  methods enabled in your store. Address and contact stay on Moonberry.
+                  Pay securely with UPI, cards, and other supported methods in a Razorpay payment window. You stay on
+                  Moonberry throughout checkout.
                 </p>
               )}
             </CheckoutSection>
@@ -1010,10 +1022,6 @@ export function CheckoutPage({
                   <span>Shipping (India)</span>
                   <span>{shipping === 0 ? 'Free' : formatINR(shipping)}</span>
                 </div>
-                <div className="flex justify-between text-moonberry-mauve">
-                  <span>GST (18%)</span>
-                  <span>{formatINR(gst)}</span>
-                </div>
                 <div className="flex justify-between pt-2 text-base font-semibold text-moonberry-brown">
                   <span>Total</span>
                   <span>{formatINR(total)}</span>
@@ -1028,18 +1036,18 @@ export function CheckoutPage({
 
               <button
                 type="submit"
-                disabled={busy || codReady !== true}
+                disabled={busy || codReady !== true || (paymentMethod === 'razorpay' && razorpayReady !== true)}
                 className="btn-primary mt-6 w-full disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {busy
                   ? 'Placing order…'
                   : paymentMethod === 'cod'
                     ? 'Place order (COD)'
-                    : 'Place order & pay on Shopify'}
+                    : 'Pay securely'}
               </button>
 
               <p className="mt-4 text-center text-[11px] leading-relaxed text-moonberry-mauve">
-                Cash on delivery or pay online via Shopify.
+                Cash on delivery or secure online payment via Razorpay.
               </p>
 
               <Link
@@ -1070,7 +1078,7 @@ export function ShippingReturnsPage() {
     <StaticArticle
       eyebrow="Policies"
       title="Shipping & returns"
-      description="Delivery across India and our return window for eligible products."
+      description="Delivery across India and our policy for damaged items."
     >
       <p>
         We ship across India. Orders are packed with care and dispatched from our fulfilment partners. You will receive
@@ -1082,17 +1090,21 @@ export function ShippingReturnsPage() {
         <li>₹99 flat shipping for orders below ₹999.</li>
         <li>Typical delivery: 2–7 business days depending on your PIN code.</li>
       </ul>
-      <h2 className="font-serif text-2xl text-moonberry-brown">Returns</h2>
+      <h2 className="font-serif text-2xl text-moonberry-brown">Damage claims &amp; replacements</h2>
       <p>
-        Unused products in original packaging may be returned within 7 days of delivery where eligible. Opened or used
-        items cannot be returned for hygiene reasons unless the product is defective.
+        We accept a return or replacement only when an item is received damaged due to an issue at our end. We do not
+        accept returns for change of mind, preference, or items that have been opened or used after delivery.
       </p>
       <p>
-        For return requests, email{' '}
+        A complete, continuous unboxing video is compulsory for every damage claim. The video must clearly show the
+        sealed parcel being opened and the damage to the product. Claims without this video cannot be accepted.
+      </p>
+      <p>
+        To raise a damage claim, email{' '}
         <a href={`mailto:${CONTACT_EMAIL}`} className="text-moonberry-brown underline underline-offset-2">
           {CONTACT_EMAIL}
         </a>{' '}
-        with your order number. Final return eligibility is confirmed in your order confirmation email.
+        with your order number, photos, and the unboxing video. We will review the proof and confirm the next steps.
       </p>
     </StaticArticle>
   )
@@ -1112,8 +1124,8 @@ export function PrivacyPolicyPage() {
       <h2 className="font-serif text-2xl text-moonberry-brown">What we collect</h2>
       <p>
         When you browse, create an account, or check out, we may process data such as your name, email, phone, shipping
-        address, and order history. Online payments are processed by Shopify Payments; cash on delivery is collected at
-        delivery. We do not store your full card details on this site.
+        address, and order history. Online payments are processed securely by Razorpay; cash on delivery is collected
+        at delivery. We do not store your full card details on this site.
       </p>
       <h2 className="font-serif text-2xl text-moonberry-brown">Cookies & analytics</h2>
       <p>
@@ -1152,7 +1164,7 @@ export function IngredientsUsagePage() {
       <h2 className="font-serif text-2xl text-moonberry-brown">Storage</h2>
       <p>Store products away from direct sunlight and excessive heat. Close lids tightly after each use.</p>
       <p className="glass rounded-2xl p-4 text-sm">
-        Product-specific directions appear on each Shopify product page and on the physical label. When in doubt,
+        Product-specific directions appear on each product page and on the physical label. When in doubt,
         consult a dermatologist.
       </p>
     </StaticArticle>
@@ -1168,8 +1180,7 @@ export function TermsPage() {
     >
       <p>
         By using this website and purchasing from Moonberry, you agree to these terms. Product availability, prices,
-        and promotions may change without notice; the checkout page on Shopify shows the final price and terms for
-        your order.
+        and promotions may change without notice; checkout shows the final price and terms for your order.
       </p>
       <h2 className="font-serif text-2xl text-moonberry-brown">Orders</h2>
       <p>
@@ -1216,7 +1227,7 @@ export function FaqPage() {
           },
           {
             q: 'Can I return a product?',
-            a: 'See our Shipping & returns page for eligibility and how to request a return within the stated window.',
+            a: 'Returns or replacements are available only for items received damaged due to an issue at our end. A complete unboxing video is required as proof. See Shipping & returns for the claim process.',
           },
         ]}
       />

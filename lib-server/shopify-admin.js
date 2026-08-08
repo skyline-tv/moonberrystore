@@ -103,15 +103,6 @@ export async function createDraftOrder({ items, totals, customer, paymentMethod 
       variantId: item.merchandiseId,
       quantity: item.qty,
     })),
-    ...(totals.gst > 0
-      ? [
-          {
-            title: 'GST (18%)',
-            quantity: 1,
-            originalUnitPrice: totals.gst,
-          },
-        ]
-      : []),
   ]
 
   const input = {
@@ -134,7 +125,6 @@ export async function createDraftOrder({ items, totals, customer, paymentMethod 
     },
     customAttributes: [
       { key: 'payment_method', value: paymentMethod },
-      { key: 'gst_inr', value: String(totals.gst) },
     ],
   }
 

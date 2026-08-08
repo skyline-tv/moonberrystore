@@ -33,7 +33,7 @@ See `.env.example` and [LAUNCH.md](./LAUNCH.md) for the full list.
 
 ## Custom checkout
 
-Orders are created in **Shopify Admin** from `/checkout` via serverless API routes — no Shopify hosted checkout redirect. See README section in repo history or LAUNCH.md for Razorpay setup.
+Orders are created in **Shopify Admin** from `/checkout` via serverless API routes. COD remains on Moonberry; online payment uses Razorpay's secure modal, so customers are not sent to a Shopify domain. Add `RAZORPAY_KEY_ID` and `RAZORPAY_KEY_SECRET` on Vercel to enable online payment.
 
 ## Vercel Deployment
 

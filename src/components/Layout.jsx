@@ -166,7 +166,7 @@ export function IndiaTrustBar() {
     { icon: CreditCard, label: 'UPI & Cards' },
     { icon: Package, label: 'COD Available' },
     { icon: Truck, label: 'Free Shipping above Rs. 999' },
-    { icon: RotateCcw, label: 'Easy 7-day Returns' },
+    { icon: RotateCcw, label: 'Damage Claims Only' },
   ]
 
   return (
@@ -364,7 +364,7 @@ export function CartDrawer({
   onClearCart,
   onCheckout,
 }) {
-  const { subtotal, shipping, gst, total } = calculateOrderTotals(
+  const { subtotal, shipping, total } = calculateOrderTotals(
     items.map((item) => ({ price: item.price, qty: item.qty })),
   )
   const remainingForFreeShipping = Math.max(999 - subtotal, 0)
@@ -400,6 +400,9 @@ export function CartDrawer({
               <img src={item.image} alt={item.name} className="h-24 w-20 rounded-xl object-cover" />
               <div className="flex-1">
                 <h4 className="font-serif text-lg leading-tight text-moonberry-brown">{item.name}</h4>
+                {item.variantTitle && item.variantTitle !== 'Default Title' ? (
+                  <p className="mt-1 text-xs text-moonberry-mauve">{item.variantTitle}</p>
+                ) : null}
                 <div className="mt-2 flex items-center gap-2">
                   <button
                     type="button"
@@ -446,15 +449,11 @@ export function CartDrawer({
             <span>Shipping</span>
             <span>{shipping === 0 ? 'Free' : formatINR(shipping)}</span>
           </div>
-          <div className="mb-4 flex items-center justify-between text-sm text-moonberry-mauve">
-            <span>Estimated GST (18%)</span>
-            <span>{formatINR(gst)}</span>
-          </div>
           <div className="mb-5 flex items-center justify-between border-t border-moonberry-rose/30 pt-4">
             <span className="font-medium">Total</span>
             <span className="text-lg font-semibold">{formatINR(total)}</span>
           </div>
-          <p className="mb-4 text-xs text-moonberry-mauve">Final GST and shipping are confirmed at checkout.</p>
+          <p className="mb-4 text-xs text-moonberry-mauve">Taxes are included in product prices. Shipping is shown above.</p>
           <button
             type="button"
             disabled={items.length === 0}
@@ -465,13 +464,14 @@ export function CartDrawer({
           </button>
           <button
             type="button"
+            disabled={items.length === 0}
             onClick={onClearCart}
-            className="mt-2 w-full rounded-full border border-moonberry-rose/40 px-6 py-3 text-sm text-moonberry-brown transition hover:bg-moonberry-cream"
+            className="mt-2 w-full rounded-full border border-moonberry-rose/40 px-6 py-3 text-sm text-moonberry-brown transition hover:bg-moonberry-cream disabled:cursor-not-allowed disabled:opacity-50"
           >
             Clear Cart
           </button>
           <p className="mt-3 text-center text-xs text-moonberry-mauve">
-            Secure checkout powered by Shopify.
+            Secure checkout · Orders managed by Shopify.
           </p>
         </div>
       </aside>

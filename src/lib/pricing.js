@@ -1,1 +1,1 @@
-export { calculateOrderTotals, FREE_SHIPPING_THRESHOLD, GST_RATE, SHIPPING_FEE } from '../../shared/pricing.js'
+export { calculateOrderTotals, FREE_SHIPPING_THRESHOLD, SHIPPING_FEE } from '../../shared/pricing.js'

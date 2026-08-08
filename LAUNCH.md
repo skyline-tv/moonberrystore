@@ -1,6 +1,6 @@
 # Launch today — MoonBerry on Vercel + Shopify
 
-**Architecture:** React storefront on **Vercel** · catalog, cart, customers via **Shopify Storefront API** · **custom on-site checkout** · **all payments via Shopify** (COD + Shopify Payments invoice for UPI/card).
+**Architecture:** React storefront on **Vercel** · catalog, cart, customers via **Shopify Storefront API** · **custom on-site checkout** · Shopify manages orders/admin while Razorpay handles online UPI/card payments.
 
 Customers stay on Moonberry for the entire checkout — contact, address, and payment.
 
@@ -28,8 +28,10 @@ Customers stay on Moonberry for the entire checkout — contact, address, and pa
 | `SHOPIFY_STOREFRONT_TOKEN` | Yes (proxy + checkout) |
 | `SHOPIFY_CLIENT_ID` | Yes (Dev Dashboard) |
 | `SHOPIFY_CLIENT_SECRET` | Yes (Dev Dashboard) |
+| `RAZORPAY_KEY_ID` | For online UPI/card payments |
+| `RAZORPAY_KEY_SECRET` | For online UPI/card payments |
 
-Enable **Shopify Payments** in Admin → Settings → Payments for online UPI/card.
+Create Razorpay Test or Live API keys in Razorpay Dashboard → Account & Settings → API Keys. Add both keys to Vercel as server environment variables; never expose the key secret in the browser.
 
 ```bash
 npm run check:env    # must print COD ready: YES
@@ -70,7 +72,7 @@ Or: `npx vercel --prod`
 | Catalog, cart sync, login | Shopify Storefront API via `/shopify-storefront` proxy |
 | Create order | Vercel `/api/checkout` → Shopify Admin draft order |
 | COD | Moonberry form → Shopify order (pay on delivery) |
-| UPI / Card | Moonberry form → Shopify invoice page → Shopify Payments |
+| UPI / Card | Moonberry checkout → Razorpay secure payment modal → Shopify order |
 | Fulfillment, inventory | Shopify Admin |
 
 ---
