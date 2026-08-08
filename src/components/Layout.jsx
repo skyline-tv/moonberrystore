@@ -374,11 +374,11 @@ export function CartDrawer({
       className={`fixed inset-0 z-50 transition ${open ? 'pointer-events-auto' : 'pointer-events-none'}`}
     >
       <div
-        className={`absolute inset-0 bg-black/30 transition-opacity duration-300 ${open ? 'opacity-100' : 'opacity-0'}`}
+        className={`absolute inset-0 bg-moonberry-brown/45 transition-opacity duration-300 ${open ? 'opacity-100' : 'opacity-0'}`}
         onClick={onClose}
       />
       <aside
-        className={`glass-strong absolute right-0 top-0 flex h-full w-full max-w-md flex-col border-l border-white/50 p-6 shadow-[-12px_0_40px_rgba(74,59,61,0.08)] transition-transform duration-300 ${
+        className={`panel-solid absolute right-0 top-0 flex h-full w-full max-w-md flex-col border-l border-[#f0e8e6] p-6 shadow-[-12px_0_40px_rgba(74,59,61,0.12)] transition-transform duration-300 ${
           open ? 'translate-x-0' : 'translate-x-full'
         }`}
       >
@@ -390,13 +390,13 @@ export function CartDrawer({
         </div>
         <div className="flex-1 space-y-5 overflow-y-auto pr-1">
           {items.length === 0 && (
-            <div className="empty-state border-dashed p-8">
+            <div className="surface-muted rounded-2xl border border-dashed border-moonberry-blush p-8 text-center">
               <p className="font-serif text-2xl text-moonberry-brown">Your bag is empty</p>
               <p className="mt-2 text-sm text-moonberry-mauve">Discover something beautiful to add.</p>
             </div>
           )}
           {items.map((item) => (
-            <div key={item.lineId || item.id} className="glass flex gap-4 rounded-2xl p-4">
+            <div key={item.lineId || item.id} className="surface-muted flex gap-4 rounded-2xl p-4">
               <img src={item.image} alt={item.name} className="h-24 w-20 rounded-xl object-cover" />
               <div className="flex-1">
                 <h4 className="font-serif text-lg leading-tight text-moonberry-brown">{item.name}</h4>

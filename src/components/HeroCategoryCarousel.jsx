@@ -31,7 +31,7 @@ export function HeroCategoryCarousel({ products = [] }) {
 
   if (!slides.length) {
     return (
-      <div className={`${frameClass} flex items-center justify-center bg-white/40`}>
+      <div className={`${frameClass} flex items-center justify-center bg-[#fdfbfb]`}>
         <BrandMark size="xl" />
       </div>
     )

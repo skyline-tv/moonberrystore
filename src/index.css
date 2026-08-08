@@ -188,6 +188,17 @@ select:focus-visible {
     inset 0 1px 0 rgba(255, 255, 255, 0.8);
 }
 
+.panel-solid {
+  background: #fdfbfb;
+  border: 1px solid #f0e8e6;
+  box-shadow: 0 12px 40px rgba(74, 59, 61, 0.14);
+}
+
+.surface-muted {
+  background: #f7f2f0;
+  border: 1px solid #ebe3e1;
+}
+
 .glass-category {
   background: rgba(255, 255, 255, 0.35);
   backdrop-filter: blur(18px) saturate(150%);
@@ -219,21 +230,20 @@ select:focus-visible {
 }
 
 .hero-panel {
-  background: rgba(255, 255, 255, 0.38);
-  backdrop-filter: blur(22px) saturate(170%);
-  -webkit-backdrop-filter: blur(22px) saturate(170%);
-  border: 1px solid rgba(255, 255, 255, 0.55);
+  background: linear-gradient(145deg, #fffcfb 0%, #f7f0ee 55%, #f2e8e6 100%);
+  border: 1px solid rgba(255, 255, 255, 0.95);
   box-shadow:
     0 16px 48px rgba(74, 59, 61, 0.1),
-    inset 0 1px 0 rgba(255, 255, 255, 0.7);
-  @apply relative overflow-hidden rounded-4xl p-8 md:p-12;
+    inset 0 1px 0 rgba(255, 255, 255, 0.95);
+  @apply relative rounded-4xl p-8 md:p-10;
 }
 
 .hero-panel::before {
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(135deg, rgba(247, 241, 238, 0.85), rgba(207, 174, 180, 0.45));
+  border-radius: inherit;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.65) 0%, transparent 55%);
   pointer-events: none;
   z-index: 0;
 }

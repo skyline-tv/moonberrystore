@@ -29,7 +29,7 @@ export function CategoryShowcase({ products = [] }) {
             <Link
               key={cat.id}
               to={`/shop?category=${cat.id}`}
-              className="group relative flex min-h-[19rem] flex-col overflow-hidden rounded-3xl border border-white/55 shadow-[0_10px_36px_rgba(74,59,61,0.08)] transition duration-500 hover:-translate-y-1"
+              className="group relative flex min-h-[19rem] flex-col overflow-hidden rounded-3xl border border-white/80 bg-[#fdfbfb] shadow-[0_10px_36px_rgba(74,59,61,0.08)] transition duration-500 hover:-translate-y-1"
             >
               {categoryPhoto ? (
                 <img

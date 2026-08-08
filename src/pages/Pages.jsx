@@ -30,7 +30,9 @@ export function HomePage({ onQuickAdd, products = [] }) {
   return (
     <div>
       <section className="section-shell grid gap-8 py-10 md:grid-cols-2 md:items-center md:gap-10 lg:gap-12 lg:py-14">
-        <div className="animate-fade-in-up self-start md:max-w-xl md:py-2">
+        <div className="animate-fade-in-up hero-panel h-fit self-start md:max-w-xl">
+          <div className="pointer-events-none absolute -left-8 -top-12 h-40 w-40 rounded-full bg-moonberry-blush/40 blur-2xl" />
+          <div className="pointer-events-none absolute -bottom-10 -right-6 h-36 w-36 rounded-full bg-moonberry-gold/15 blur-2xl" />
           <p className="eyebrow">Moonberry</p>
           <h1 className="editorial-heading">
             Perfumes, Nails &amp; Hair Care — Crafted for You.
