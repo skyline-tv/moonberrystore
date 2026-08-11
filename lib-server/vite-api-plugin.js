@@ -1,17 +1,14 @@
-import { handleCheckoutCreate } from './checkout.js'
+import { handleCheckoutCreate, handleCheckoutVerify } from './checkout.js'
 import { handleHealthCheck } from './health.js'
 import { handleStorefrontProxy } from './shopify-storefront-proxy.js'
 import { handleApiRoute } from './http.js'
-
-async function handleCheckoutVerifyDeprecated() {
-  throw new Error('Online payments use Shopify only. Complete payment on the Shopify invoice page.')
-}
 
 /** @type {Record<string, { kind: 'json' | 'post' | 'proxy', handler: Function }>} */
 const routes = {
   '/api/health': { kind: 'json', handler: handleHealthCheck },
   '/api/checkout/create': { kind: 'post', handler: handleCheckoutCreate },
-  '/api/checkout/verify': { kind: 'post', handler: handleCheckoutVerifyDeprecated },
+  // Keep local checkout behaviour identical to the deployed serverless routes.
+  '/api/checkout/verify': { kind: 'post', handler: handleCheckoutVerify },
   '/api/shopify-storefront': { kind: 'proxy', handler: handleStorefrontProxy },
   '/shopify-storefront': { kind: 'proxy', handler: handleStorefrontProxy },
 }

@@ -700,7 +700,7 @@ export function CheckoutPage({
       .then((status) => {
         if (!cancelled) {
           setCodReady(Boolean(status.codReady))
-          setRazorpayReady(Boolean(status.razorpay))
+          setRazorpayReady(Boolean(status.onlinePaymentReady))
         }
       })
       .catch(() => {

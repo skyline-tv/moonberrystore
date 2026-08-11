@@ -3,7 +3,7 @@ import { fetchAdminTokenInfo } from './shopify-admin-auth.js'
 
 export function getCheckoutReadiness() {
   const config = getServerConfig()
-  return {
+  const baseReadiness = {
     storefront: config.hasStorefront,
     admin: config.hasAdmin,
     adminAuth: config.hasLegacyAdminToken
@@ -13,8 +13,11 @@ export function getCheckoutReadiness() {
         : 'missing',
     razorpay: config.hasRazorpay,
     codReady: config.hasStorefront && config.hasAdmin,
+    onlinePaymentReady: config.hasStorefront && config.hasAdmin && config.hasRazorpay,
     storeDomain: config.storeDomain || null,
   }
+
+  return baseReadiness
 }
 
 export async function handleHealthCheck() {
@@ -30,12 +33,14 @@ export async function handleHealthCheck() {
       adminScopes: tokenInfo.scopes,
       hasWriteDraftOrders: tokenInfo.hasWriteDraftOrders,
       codReady: readiness.codReady && tokenInfo.hasWriteDraftOrders,
+      onlinePaymentReady: readiness.onlinePaymentReady && tokenInfo.hasWriteDraftOrders,
     }
   } catch (error) {
     return {
       ...readiness,
       adminTokenError: error?.message || 'Could not fetch Admin API token.',
       codReady: false,
+      onlinePaymentReady: false,
     }
   }
 }

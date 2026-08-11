@@ -35,8 +35,9 @@ if (status.adminAuth === 'dev_dashboard') {
   console.log(`  write_draft_orders : ${status.hasWriteDraftOrders ? 'YES' : 'NO'}`)
 }
 if (status.adminTokenError) console.log(`  Token error    : ${status.adminTokenError}`)
-console.log(`  Razorpay       : ${status.razorpay ? 'OK' : 'optional'}`)
+console.log(`  Razorpay keys  : ${status.razorpay ? 'OK' : 'MISSING (required for online payments)'}`)
 console.log(`  COD ready      : ${status.codReady ? 'YES' : 'NO'}`)
+console.log(`  Online payment : ${status.onlinePaymentReady ? 'YES' : 'NO'}`)
 if (status.storeDomain) console.log(`  Store          : ${status.storeDomain}`)
 
 if (!status.codReady) {
@@ -50,8 +51,16 @@ if (!status.codReady) {
     console.log('  • Add SHOPIFY_CLIENT_ID + SHOPIFY_CLIENT_SECRET (Dev Dashboard)')
     console.log('  • Install the app on your store')
   }
+  if (!status.razorpay) {
+    console.log('  • Add RAZORPAY_KEY_ID + RAZORPAY_KEY_SECRET to enable online payments')
+  }
   process.exit(1)
 }
 
-console.log('\nReady. Run: npm run dev → add to bag → /checkout → Cash on delivery')
+if (!status.onlinePaymentReady) {
+  console.log('\nCOD is ready. Add RAZORPAY_KEY_ID + RAZORPAY_KEY_SECRET to enable online payments.')
+  process.exit(0)
+}
+
+console.log('\nReady. Run: npm run dev → add to bag → /checkout → Pay securely')
 process.exit(0)
