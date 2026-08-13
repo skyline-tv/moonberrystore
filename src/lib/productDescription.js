@@ -69,5 +69,71 @@ export function sanitizeProductDescription(html, fallback = '') {
     if (lineBreak.parentNode === template.content) lineBreak.remove()
   }
 
+  // Source formatting between Shopify blocks becomes text nodes in the DOM.
+  // Remove those whitespace-only nodes rather than letting CSS turn them into
+  // visual rows between product details.
+  for (const textNode of [...template.content.childNodes]) {
+    if (textNode.nodeType === Node.TEXT_NODE && !textNode.textContent.trim()) textNode.remove()
+  }
+
   return template.innerHTML || safeFallback
+}
+
+/**
+ * Convert Shopify's rich text into compact storefront rows. Shopify's editor
+ * inserts empty paragraphs and break-only blocks; rendering those blocks
+ * directly was the cause of the very large gaps on product pages.
+ */
+export function getProductDescriptionBlocks(html, fallback = '') {
+  const source = html || escapeHtml(fallback)
+  if (typeof document === 'undefined') {
+    return compactText(fallback)
+      .split('\n')
+      .filter(Boolean)
+      .map((text) => ({ type: 'text', text }))
+  }
+
+  const template = document.createElement('template')
+  template.innerHTML = source
+
+  for (const lineBreak of template.content.querySelectorAll('br')) {
+    lineBreak.replaceWith('\n')
+  }
+
+  const blocks = []
+  const addTextBlock = (value) => {
+    const text = compactText(value)
+    if (text) blocks.push({ type: 'text', text })
+  }
+
+  for (const child of [...template.content.childNodes]) {
+    if (child.nodeType === Node.TEXT_NODE) {
+      addTextBlock(child.textContent)
+      continue
+    }
+    if (child.nodeType !== Node.ELEMENT_NODE) continue
+
+    const tag = child.tagName.toLowerCase()
+    if (tag === 'table') {
+      const rows = [...child.querySelectorAll('tr')]
+        .map((row) =>
+          [...row.querySelectorAll(':scope > th, :scope > td')]
+            .map((cell) => compactText(cell.textContent))
+            .filter(Boolean),
+        )
+        .filter((cells) => cells.length)
+      if (rows.length) blocks.push({ type: 'table', rows })
+    } else if (tag === 'ul' || tag === 'ol') {
+      for (const item of child.querySelectorAll(':scope > li')) addTextBlock(item.textContent)
+    } else {
+      addTextBlock(child.textContent)
+    }
+  }
+
+  return blocks.length
+    ? blocks
+    : compactText(fallback)
+        .split('\n')
+        .filter(Boolean)
+        .map((text) => ({ type: 'text', text }))
 }

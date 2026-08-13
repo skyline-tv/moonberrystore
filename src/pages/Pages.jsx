@@ -16,7 +16,7 @@ import { ProductCard, SectionHeading } from '../components/ProductCard'
 import { formatINR } from '../lib/currency'
 import { calculateOrderTotals } from '../lib/pricing'
 import { fetchCheckoutReadiness } from '../lib/checkoutApi'
-import { sanitizeProductDescription } from '../lib/productDescription'
+import { getProductDescriptionBlocks } from '../lib/productDescription'
 import { pickVariantForOption } from '../lib/shopify'
 import { getCategoryById, SHOP_CATEGORIES } from '../lib/categories'
 import { getSitePhoto } from '../lib/sitePhotos'
@@ -31,8 +31,8 @@ export function HomePage({ onQuickAdd, products = [] }) {
 
   return (
     <div>
-      <section className="home-hero section-shell grid gap-8 py-10 md:grid-cols-2 md:items-start md:gap-10 lg:gap-12 lg:py-14">
-        <div className="animate-fade-in-up hero-panel !block !h-fit !self-start md:max-w-xl">
+      <section className="home-hero section-shell flex flex-col gap-8 py-10 md:flex-row md:items-start md:gap-10 lg:gap-12 lg:py-14">
+        <div className="animate-fade-in-up hero-panel w-full md:w-1/2">
           <div className="pointer-events-none absolute -left-8 -top-12 h-40 w-40 rounded-full bg-moonberry-blush/40 blur-2xl" />
           <div className="pointer-events-none absolute -bottom-10 -right-6 h-36 w-36 rounded-full bg-moonberry-gold/15 blur-2xl" />
           <p className="eyebrow">Moonberry</p>
@@ -52,7 +52,7 @@ export function HomePage({ onQuickAdd, products = [] }) {
             </Link>
           </div>
         </div>
-        <div className="animate-fade-in-up animate-delay-200 w-full self-start">
+        <div className="animate-fade-in-up animate-delay-200 w-full md:w-1/2">
           {heroImage ? (
             <img
               src={heroImage}
@@ -274,7 +274,7 @@ export function ProductPage({ onQuickAdd, products = [] }) {
     return pickVariantForOption(product, sel)
   }, [product, selection.slug, selection.selectedSize])
   const productDescription = useMemo(
-    () => sanitizeProductDescription(product?.descriptionHtml, product?.description),
+    () => getProductDescriptionBlocks(product?.descriptionHtml, product?.description),
     [product?.description, product?.descriptionHtml],
   )
 
@@ -409,10 +409,25 @@ export function ProductPage({ onQuickAdd, products = [] }) {
 
       <section className="glass-strong mt-10 rounded-4xl p-8 md:p-10">
         <p className="eyebrow">About this product</p>
-        <div
-          className="product-description text-moonberry-mauve"
-          dangerouslySetInnerHTML={{ __html: productDescription }}
-        />
+        <div className="product-description text-moonberry-mauve">
+          {productDescription.map((block, index) => (
+            block.type === 'table' ? (
+              <table key={`table-${index}`} className="product-description-table">
+                <tbody>
+                  {block.rows.map((cells, rowIndex) => (
+                    <tr key={`${cells.join('-')}-${rowIndex}`}>
+                      {cells.map((cell, cellIndex) => (
+                        <td key={`${cell}-${cellIndex}`}>{cell}</td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            ) : (
+              <p key={`${block.text}-${index}`}>{block.text}</p>
+            )
+          ))}
+        </div>
         <div className="mt-8 space-y-3">
           {product.notes?.length ? (
             <details className="accordion-luxury">

@@ -254,17 +254,20 @@ select:focus-visible {
   z-index: 0;
 }
 
-.hero-panel > * {
+.hero-panel > :not(.pointer-events-none) {
   position: relative;
   z-index: 1;
 }
 
-/* The copy and photo are independent columns on the homepage.  Do not let
-   the grid row stretch the copy card to the photo's height. */
+.hero-panel > .pointer-events-none {
+  position: absolute !important;
+}
+
+/* The copy and photo are independent flex columns on the homepage. */
 .home-hero > .hero-panel {
   display: block !important;
   align-self: start !important;
-  height: fit-content !important;
+  height: auto !important;
   min-height: 0 !important;
 }
 
@@ -363,20 +366,33 @@ select:focus-visible {
 }
 
 .product-description {
-  @apply whitespace-pre-line text-[15px] leading-relaxed md:text-base;
-}
-
-.product-description > * + * {
-  margin-top: 0.75rem;
-}
-
-.product-description p {
-  margin: 0 !important;
-  @apply whitespace-pre-line;
+  @apply text-[15px] leading-relaxed md:text-base;
 }
 
 .product-description > p + p {
-  margin-top: 0.75rem !important;
+  margin-top: 0.5rem;
+}
+
+.product-description p {
+  margin: 0;
+}
+
+.product-description-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.product-description-table td {
+  padding: 0.35rem 0;
+  vertical-align: top;
+  white-space: pre-line;
+}
+
+.product-description-table td:first-child:not(:only-child) {
+  width: 32%;
+  padding-right: 1rem;
+  font-weight: 600;
+  color: var(--color-moonberry-brown);
 }
 
 .product-description ul {
