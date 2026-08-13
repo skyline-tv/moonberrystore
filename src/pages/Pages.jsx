@@ -22,6 +22,8 @@ import { getCategoryById, SHOP_CATEGORIES } from '../lib/categories'
 import { getSitePhoto } from '../lib/sitePhotos'
 import { CONTACT_ADDRESS, CONTACT_EMAIL, CONTACT_PHONE, HAS_CONTACT_PHONE } from '../lib/site'
 
+const PRODUCT_IMAGE_FALLBACK = '/moonberry-logo.png'
+
 export function HomePage({ onQuickAdd, products = [] }) {
   const bestSellers = products.filter((item) => item.bestSeller).slice(0, 6)
   const heroImage = getSitePhoto('hero')
@@ -29,8 +31,8 @@ export function HomePage({ onQuickAdd, products = [] }) {
 
   return (
     <div>
-      <section className="section-shell grid gap-8 py-10 md:grid-cols-2 md:items-center md:gap-10 lg:gap-12 lg:py-14">
-        <div className="animate-fade-in-up hero-panel h-fit self-start md:max-w-xl">
+      <section className="home-hero section-shell grid gap-8 py-10 md:grid-cols-2 md:items-start md:gap-10 lg:gap-12 lg:py-14">
+        <div className="animate-fade-in-up hero-panel md:max-w-xl">
           <div className="pointer-events-none absolute -left-8 -top-12 h-40 w-40 rounded-full bg-moonberry-blush/40 blur-2xl" />
           <div className="pointer-events-none absolute -bottom-10 -right-6 h-36 w-36 rounded-full bg-moonberry-gold/15 blur-2xl" />
           <p className="eyebrow">Moonberry</p>
@@ -38,7 +40,7 @@ export function HomePage({ onQuickAdd, products = [] }) {
             Perfumes, Nails &amp; Hair Care — Crafted for You.
           </h1>
           <p className="mt-6 max-w-lg text-base leading-relaxed text-moonberry-mauve md:text-[17px]">
-            Fine fragrances, nail colour, nail accessories, and hair care rituals — quietly luxurious,
+            Fine fragrances, nail colour, nail care, and hair care rituals — quietly luxurious,
             made for everyday beauty.
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
@@ -50,7 +52,7 @@ export function HomePage({ onQuickAdd, products = [] }) {
             </Link>
           </div>
         </div>
-        <div className="animate-fade-in-up animate-delay-200 w-full self-center">
+        <div className="animate-fade-in-up animate-delay-200 w-full self-start">
           {heroImage ? (
             <img
               src={heroImage}
@@ -188,7 +190,7 @@ export function ShopPage({ onQuickAdd, products = [] }) {
         description={
           activeMeta
             ? activeMeta.description
-            : 'Perfumes, nails, nail accessories, and hair care — browse the full Moonberry catalog.'
+            : 'Perfumes, nails, nail care, and hair care — browse the full Moonberry catalog.'
         }
         image={shopHeroImage}
         imageAlt={activeMeta ? activeMeta.label : 'Moonberry shop'}
@@ -323,7 +325,11 @@ export function ProductPage({ onQuickAdd, products = [] }) {
       />
       <div className="grid gap-10 lg:grid-cols-2 lg:items-start lg:gap-14">
         <div className="glass-strong rounded-4xl p-2">
-          <img src={activeImage} alt={product.name} className="product-gallery-main rounded-3xl" />
+          <img
+            src={activeImage || PRODUCT_IMAGE_FALLBACK}
+            alt={product.name}
+            className="product-gallery-main rounded-3xl"
+          />
           {product.images.length > 1 ? (
             <div className="mt-4 grid grid-cols-4 gap-3 px-2 pb-2">
               {product.images.map((image, index) => (

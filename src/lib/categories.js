@@ -19,7 +19,7 @@ export const SHOP_CATEGORIES = [
   },
   {
     id: 'nail-accessories',
-    label: 'Nail Accessories',
+    label: 'Nail Care',
     description: 'Tools, art, and care essentials.',
     icon: Gem,
     gradient: 'from-[#f2eceb] via-[#e6d8dc] to-[#cdb0b8]',

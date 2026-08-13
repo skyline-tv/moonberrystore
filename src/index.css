@@ -230,6 +230,11 @@ select:focus-visible {
 }
 
 .hero-panel {
+  /* Keep the homepage copy panel sized by its content. This also prevents a
+     grid row from stretching it into a tall, mostly empty card. */
+  height: auto;
+  min-height: 0;
+  align-self: start;
   background: linear-gradient(145deg, #fffcfb 0%, #f7f0ee 55%, #f2e8e6 100%);
   border: 1px solid rgba(255, 255, 255, 0.95);
   box-shadow:

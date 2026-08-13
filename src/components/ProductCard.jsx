@@ -2,6 +2,8 @@ import { Link } from 'react-router-dom'
 import { ShoppingBag } from 'lucide-react'
 import { formatINR } from '../lib/currency'
 
+const PRODUCT_IMAGE_FALLBACK = '/moonberry-logo.png'
+
 export function ProductCard({ product, onQuickAdd }) {
   const hasDiscount = product.compareAtPrice && product.compareAtPrice > product.price
   const discountPercent = hasDiscount
@@ -25,7 +27,7 @@ export function ProductCard({ product, onQuickAdd }) {
             ) : null}
           </div>
           <img
-            src={product.images[0]}
+            src={product.images[0] || PRODUCT_IMAGE_FALLBACK}
             alt={product.name}
             className="aspect-[4/5] w-full object-cover transition duration-700 group-hover:scale-[1.04]"
             loading="lazy"

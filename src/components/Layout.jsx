@@ -335,7 +335,11 @@ export function SearchModal({
                   }}
                   className="glass flex w-full items-center gap-4 rounded-2xl p-3 text-left transition hover:-translate-y-0.5 hover:shadow-md"
                 >
-                  <img src={product.images[0]} alt={product.name} className="h-16 w-14 rounded-xl object-cover" />
+                  <img
+                    src={product.images[0] || '/moonberry-logo.png'}
+                    alt={product.name}
+                    className="h-16 w-14 rounded-xl object-cover"
+                  />
                   <div className="flex-1">
                     <p className="font-serif text-lg text-moonberry-brown">{product.name}</p>
                     <p className="text-xs uppercase tracking-wide text-moonberry-mauve">{product.category}</p>
@@ -487,7 +491,7 @@ export function Footer() {
         <div className="lg:col-span-1">
           <BrandMark size="md" />
           <p className="mt-4 max-w-xs text-sm leading-relaxed text-moonberry-mauve">
-            Perfumes, nails, nail accessories, and hair care — curated with boutique-quality care.
+            Perfumes, nails, nail care, and hair care — curated with boutique-quality care.
           </p>
         </div>
         <div>

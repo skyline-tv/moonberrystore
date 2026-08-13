@@ -73,8 +73,12 @@ export async function shopifyRequest(query, variables = {}, options = {}) {
 }
 
 const PRODUCTS_QUERY = `
-  query Products($productsFirst: Int!) {
-    products(first: $productsFirst, sortKey: CREATED_AT, reverse: true) {
+  query Products($productsFirst: Int!, $cursor: String) {
+    products(first: $productsFirst, after: $cursor, sortKey: BEST_SELLING) {
+      pageInfo {
+        hasNextPage
+        endCursor
+      }
       edges {
         node {
           id
@@ -295,7 +299,9 @@ function mapProduct(node) {
     sizes: displayLabels,
     variantChoices,
     notes: node.tags.slice(0, 4),
-    images: node.images.edges.map((edge) => edge.node.url),
+    // A product can be published before its media finishes uploading. Keep the
+    // card/gallery usable in that case instead of rendering an invalid <img>.
+    images: node.images.edges.map((edge) => edge.node.url).filter(Boolean),
     bestSeller: node.tags.some((tag) => tag.toLowerCase().includes('best')),
     variantId: firstVariant?.id,
   }
@@ -321,12 +327,25 @@ export function pickVariantForOption(product, optionLabel) {
 }
 
 export async function getStorefrontCatalog() {
-  const data = await shopifyRequest(PRODUCTS_QUERY, {
-    productsFirst: 40,
-  })
+  const products = []
+  let cursor = null
+  let hasNextPage = true
+
+  // Shopify returns a maximum of 250 products per page. Fetch each page so a
+  // growing catalog does not silently disappear after the first page.
+  while (hasNextPage) {
+    const data = await shopifyRequest(PRODUCTS_QUERY, {
+      productsFirst: 250,
+      cursor,
+    })
+    const connection = data.products
+    products.push(...connection.edges.map((edge) => mapProduct(edge.node)))
+    hasNextPage = connection.pageInfo.hasNextPage
+    cursor = connection.pageInfo.endCursor
+  }
 
   return {
-    products: data.products.edges.map((edge) => mapProduct(edge.node)),
+    products,
   }
 }
 

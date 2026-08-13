@@ -17,13 +17,19 @@ export function CategoryShowcase({ products = [] }) {
       <SectionHeading
         eyebrow="Categories"
         title="Shop by Ritual"
-        description="Perfumes, nails, nail accessories, and hair care — curated for modern beauty."
+        description="Perfumes, nails, nail care, and hair care — curated for modern beauty."
       />
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {SHOP_CATEGORIES.map((cat) => {
           const Icon = cat.icon
           const count = counts[cat.id] || 0
-          const categoryPhoto = getSitePhoto(cat.id)
+          // Prefer a curated image when one is configured; otherwise use the
+          // first matching Shopify product image so every populated category
+          // has photography without maintaining duplicate assets.
+          const categoryPhoto =
+            getSitePhoto(cat.id) ||
+            products.find((product) => product.categoryId === cat.id)?.images?.[0] ||
+            null
 
           return (
             <Link
