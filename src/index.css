@@ -259,6 +259,15 @@ select:focus-visible {
   z-index: 1;
 }
 
+/* The copy and photo are independent columns on the homepage.  Do not let
+   the grid row stretch the copy card to the photo's height. */
+.home-hero > .hero-panel {
+  display: block !important;
+  align-self: start !important;
+  height: fit-content !important;
+  min-height: 0 !important;
+}
+
 .editorial-heading {
   @apply font-serif text-4xl leading-[1.02] tracking-tight text-moonberry-brown md:text-5xl lg:text-[3.5rem];
 }
@@ -362,7 +371,12 @@ select:focus-visible {
 }
 
 .product-description p {
-  @apply m-0 whitespace-pre-line;
+  margin: 0 !important;
+  @apply whitespace-pre-line;
+}
+
+.product-description > p + p {
+  margin-top: 0.75rem !important;
 }
 
 .product-description ul {

@@ -9,9 +9,19 @@ function escapeHtml(value) {
     .replaceAll("'", '&#39;')
 }
 
+function compactText(value) {
+  return String(value)
+    .replaceAll('\r\n', '\n')
+    .replaceAll('\r', '\n')
+    .replace(/\n[\t ]*\n+/g, '\n')
+    .trim()
+}
+
 /** Shopify description HTML is formatted for customers; keep only safe, presentation-level markup. */
 export function sanitizeProductDescription(html, fallback = '') {
-  const safeFallback = escapeHtml(fallback)
+  // The plain-text fallback can contain the blank lines entered in Shopify's
+  // editor. Keep each line, but never render a stack of empty rows.
+  const safeFallback = escapeHtml(compactText(fallback)).replaceAll('\n', '<br>')
   if (!html || typeof document === 'undefined') return safeFallback
 
   const template = document.createElement('template')
@@ -45,14 +55,18 @@ export function sanitizeProductDescription(html, fallback = '') {
   // between fields. They take up a full line in the storefront even though
   // they contain no visible copy, creating the large gaps seen on products.
   for (const paragraph of template.content.querySelectorAll('p')) {
+    // A pair of line breaks inside a paragraph is another way Shopify creates
+    // an empty visual row. One break keeps a label and its value on separate
+    // lines without leaving the oversized gap.
+    paragraph.innerHTML = paragraph.innerHTML.replace(/(?:<br>\s*){2,}/gi, '<br>')
     const copy = paragraph.textContent.replaceAll('\u00a0', ' ').trim()
     if (!copy && !paragraph.querySelector('img, video')) paragraph.remove()
   }
 
+  // Paragraphs already create their own vertical rhythm. Top-level <br>s are
+  // only empty Shopify rows, so remove them altogether.
   for (const lineBreak of template.content.querySelectorAll('br')) {
-    const previous = lineBreak.previousSibling
-    const next = lineBreak.nextSibling
-    if (!previous && !next) lineBreak.remove()
+    if (lineBreak.parentNode === template.content) lineBreak.remove()
   }
 
   return template.innerHTML || safeFallback
