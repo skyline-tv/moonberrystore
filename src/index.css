@@ -230,8 +230,9 @@ select:focus-visible {
 }
 
 .hero-panel {
-  /* Keep the homepage copy panel sized by its content. This also prevents a
-     grid row from stretching it into a tall, mostly empty card. */
+  /* The homepage panel is deliberately content-sized: it must never inherit
+     the height of the photo alongside it. */
+  display: block;
   height: auto;
   min-height: 0;
   align-self: start;
@@ -353,11 +354,15 @@ select:focus-visible {
 }
 
 .product-description {
-  @apply space-y-4 whitespace-pre-line text-[15px] leading-relaxed md:text-base;
+  @apply whitespace-pre-line text-[15px] leading-relaxed md:text-base;
+}
+
+.product-description > * + * {
+  margin-top: 0.75rem;
 }
 
 .product-description p {
-  @apply whitespace-pre-line;
+  @apply m-0 whitespace-pre-line;
 }
 
 .product-description ul {

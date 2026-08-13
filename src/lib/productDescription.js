@@ -41,5 +41,19 @@ export function sanitizeProductDescription(html, fallback = '') {
     }
   }
 
+  // Shopify's rich-text editor can leave empty paragraph and break elements
+  // between fields. They take up a full line in the storefront even though
+  // they contain no visible copy, creating the large gaps seen on products.
+  for (const paragraph of template.content.querySelectorAll('p')) {
+    const copy = paragraph.textContent.replaceAll('\u00a0', ' ').trim()
+    if (!copy && !paragraph.querySelector('img, video')) paragraph.remove()
+  }
+
+  for (const lineBreak of template.content.querySelectorAll('br')) {
+    const previous = lineBreak.previousSibling
+    const next = lineBreak.nextSibling
+    if (!previous && !next) lineBreak.remove()
+  }
+
   return template.innerHTML || safeFallback
 }
